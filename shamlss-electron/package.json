@@ -1,0 +1,24 @@
+{
+  "name": "shamlss-electron",
+  "version": "0.1.0",
+  "description": "Shamlss desktop shell — Electron tray wrapper for shamlss-daemon",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icons": "node assets/generate-icons.js",
+    "pack": "npm run icons && electron-builder --dir",
+    "dist": "npm run icons && electron-builder",
+    "dist:win": "npm run icons && electron-builder --win",
+    "dist:mac": "npm run icons && electron-builder --mac",
+    "dist:linux": "npm run icons && electron-builder --linux",
+    "postinstall": "node assets/generate-icons.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.0.0",
+    "electron-rebuild": "^3.2.9"
+  }
+}

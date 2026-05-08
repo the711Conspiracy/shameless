@@ -1,0 +1,56 @@
+*.iml
+.gradle
+/local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Flutter build output
+shamlss_flutter/build/
+*.apk
+
+# Env / secrets
+.env
+*.env.local
+
+# Archives
+*.zip
+
+# Electron build output and bundled binaries
+shamlss-electron/dist/
+shamlss-electron/resources/node/
+
+# IDE / editor
+.idea/
+*.iws
+
+# Internal / AI assistant files
+.claude/
+SHAMLSS_NEW_CHAT_PROMPT.md
+
+# Old scaffolds and duplicates
+app/
+shamlss_update/
+shamlss_flutter/shamlss_flutter/
+
+# Root-level Gradle scaffold (belongs to deleted app/ project)
+build.gradle.kts
+settings.gradle.kts
+gradle.properties
+gradlew
+gradlew.bat
+gradle/
+
+# Internal planning state
+devplan/orchestrator.md
+
+# Local build/test artifact folders
+shamlss-beta-dist/
+test - delete/

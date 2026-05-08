@@ -1,0 +1,66 @@
+appId: com.shamlss.desktop
+productName: Shamlss
+copyright: Shamlss — Self Hosted Audio Music Library Streaming Service
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - main.js
+  - ui/**/*
+  - assets/**/*
+  - node_modules/**/*
+  - "!node_modules/.cache"
+
+extraResources:
+  - from: "../shamlss-daemon"
+    to: "shamlss-daemon"
+    filter:
+      - "**/*"
+      - "!node_modules/.cache"
+      - "!node_modules/better-sqlite3/build/Release/*.pdb"
+  - from: "resources/node"
+    to: "node"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/tray-32.png
+  category: public.app-category.music
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: assets/tray-32.png
+  category: Audio
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Shamlss
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+
+appImage:
+  artifactName: Shamlss-${version}.AppImage

@@ -1,0 +1,23 @@
+{
+  "p2_pairing": true,
+  "p3_local_library": true,
+  "p3_playback": true,
+  "p4_remote_streaming": true,
+  "p5_multi_pod_ux": true,
+  "p6_mesh": true,
+  "p7_track_analysis": true,
+  "p7_smart_playlists": true,
+  "p7_ollama": false,
+  "p8_activity_feed": true,
+  "p8_collab_queue": true,
+  "p8_listening_party": true,
+  "p8_chat": true,
+  "p8_reactions": true,
+  "p9_crossfade": true,
+  "p9_auto_mix": true,
+  "p9_visualizer": true,
+  "p10_wireguard": false,
+  "p10_multi_room": true,
+  "p10_offline": true,
+  "p10_updater": false
+}

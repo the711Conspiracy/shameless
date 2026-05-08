@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:7432; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Shamlss</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0f1e;
+      color: #e8e8e8;
+      font-family: 'Courier New', Courier, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      user-select: none;
+    }
+    .wordmark { font-size: 11px; letter-spacing: 0.4em; color: #6b7280; text-transform: uppercase; margin-bottom: 16px; }
+    h1 { font-size: 40px; font-weight: 700; color: #f8f8f8; letter-spacing: -0.02em; margin-bottom: 32px; }
+    .accent { color: #f59e0b; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+      width: 340px;
+    }
+    .stat {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; color: #f59e0b; }
+    .stat-label { font-size: 10px; color: #4b5563; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+    .now-playing {
+      width: 340px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      padding: 10px 16px;
+      font-size: 11px;
+      color: #6b7280;
+      letter-spacing: 0.04em;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f59e0b; flex-shrink: 0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .dot.idle { background: #374151; animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .np-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #9ca3af; }
+    .status-row {
+      margin-top: 14px; font-size: 10px; color: #374151;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .top-artists {
+      width: 340px; margin-top: 16px;
+    }
+    .top-label { font-size: 10px; color: #374151; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .artist-row {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: #6b7280; padding: 3px 0;
+      border-bottom: 1px solid #111827;
+    }
+    .artist-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+    .artist-plays { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="wordmark">Self Hosted Audio Music Library Streaming Service</div>
+  <h1>Shaml<span class="accent">ss</span></h1>
+
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-val" id="tracks">—</div><div class="stat-label">Tracks</div></div>
+    <div class="stat"><div class="stat-val" id="artists">—</div><div class="stat-label">Artists</div></div>
+    <div class="stat"><div class="stat-val" id="albums">—</div><div class="stat-label">Albums</div></div>
+  </div>
+
+  <div class="now-playing">
+    <div class="dot idle" id="dot"></div>
+    <div class="np-text" id="np">Nothing playing recently</div>
+  </div>
+
+  <div class="top-artists" id="top-artists-section" style="display:none">
+    <div class="top-label">Top artists this week</div>
+    <div id="top-artists-list"></div>
+  </div>
+
+  <div class="status-row">daemon :7432 &nbsp;·&nbsp; <span id="node-id">—</span></div>
+
+  <script>
+    const BASE = 'http://127.0.0.1:7432'
+
+    async function refresh() {
+      try {
+        const [ping, stats] = await Promise.all([
+          fetch(BASE + '/ping').then(r => r.json()),
+          fetch(BASE + '/stats').then(r => r.json())
+        ])
+
+        document.getElementById('node-id').textContent = (ping.node_id || '').slice(0, 8) + '…'
+        document.getElementById('tracks').textContent = stats.trackCount ?? '—'
+        document.getElementById('artists').textContent = stats.artistCount ?? '—'
+        document.getElementById('albums').textContent = stats.albumCount ?? '—'
+
+        const np = stats.recentPlay
+        if (np) {
+          document.getElementById('dot').className = 'dot'
+          document.getElementById('np').textContent = (np.artist ? np.artist + ' — ' : '') + (np.title || '')
+        } else {
+          document.getElementById('dot').className = 'dot idle'
+          document.getElementById('np').textContent = 'Nothing playing recently'
+        }
+
+        const top = stats.topArtists || []
+        if (top.length > 0) {
+          document.getElementById('top-artists-section').style.display = ''
+          document.getElementById('top-artists-list').innerHTML = top.map(a =>
+            `<div class="artist-row"><span class="artist-name">${esc(a.artist)}</span><span class="artist-plays">${a.plays}</span></div>`
+          ).join('')
+        }
+      } catch {}
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    }
+
+    refresh()
+    setInterval(refresh, 5000)
+  </script>
+</body>
+</html>

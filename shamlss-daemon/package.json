@@ -1,0 +1,16 @@
+{
+  "name": "shamlss-daemon",
+  "version": "0.1.0",
+  "main": "src/daemon.js",
+  "scripts": {
+    "start": "node src/daemon.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "express": "^5.2.1",
+    "libsodium-wrappers": "^0.8.4",
+    "music-metadata": "^11.12.3",
+    "selfsigned": "^5.5.0",
+    "ws": "^8.20.0"
+  }
+}
