@@ -49,8 +49,19 @@ gradlew.bat
 gradle/
 
 # Internal planning state
-devplan/orchestrator.md
+docs/orchestrator.md
+devplan/
 
 # Local build/test artifact folders
 shamlss-beta-dist/
 test - delete/
+
+# Flutter scaffold files not needed in source control
+shamlss_flutter/README.md
+shamlss_flutter/.metadata
+shamlss_flutter/flutter_01.png
+shamlss_flutter/web/
+shamlss_flutter/test/
+
+# Electron dev utilities
+shamlss-electron/assets/generate-icons.js

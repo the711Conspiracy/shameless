@@ -204,7 +204,7 @@ shamlss-electron/       Windows desktop shell (Electron tray app)
   main.js               Spawns daemon, creates tray + browser window
 
 installer/              Server installer scripts (Windows, Linux, macOS)
-devplan/                Architecture and feature documentation
+docs/                   Architecture, feature map, and project overview
 ```
 
 ---
@@ -263,13 +263,13 @@ The daemon exposes a REST + WebSocket API on port 7432. All endpoints return JSO
 | `PATCH /settings` | Update settings |
 | `GET /stats` | Library statistics |
 
-Full API docs are in [`devplan/SHAMLSS_PROJECT.md`](devplan/SHAMLSS_PROJECT.md).
+Full API docs are in [`docs/PROJECT.md`](docs/PROJECT.md).
 
 ---
 
 ## Contributing
 
-Pull requests welcome. Check [`devplan/SHAMLSS_FEATURES.md`](devplan/SHAMLSS_FEATURES.md) for the full feature roadmap and open items.
+Pull requests welcome. Check [`docs/FEATURES.md`](docs/FEATURES.md) for the full feature roadmap and open items.
 
 1. Fork the repo
 2. Create a branch (`git checkout -b feature/my-feature`)

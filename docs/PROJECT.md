@@ -1,4 +1,4 @@
-# Shamlss — LLM Agent Briefing
+# Shamlss — Project Overview
 
 ## What Is This
 Self Hosted Audio Music Library Streaming Service. A fully local, P2P music streaming app. No cloud. No central server. Users host their own music library on their PC; a Flutter app streams it over LAN/WAN. Friends share music by joining a "pod" — a cryptographically closed swarm, torrent-style. One user can belong to many pods simultaneously; one daemon handles all of them.
