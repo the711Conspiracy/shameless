@@ -8,6 +8,31 @@ Stream your personal music library from your PC to your phone — over your home
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Library</b></td>
+    <td align="center"><b>Now Playing</b></td>
+    <td align="center"><b>History</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/flutter-library.png" width="260" alt="Library screen"/></td>
+    <td><img src="docs/screenshots/flutter-now-playing.png" width="260" alt="Now Playing screen"/></td>
+    <td><img src="docs/screenshots/flutter-history.png" width="260" alt="History screen"/></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3"><b>Web Player</b></td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center"><img src="docs/screenshots/web-player.png" width="780" alt="Web Player"/></td>
+  </tr>
+</table>
+
+> *The UI adapts its color palette to the currently playing track's album art.*
+
+---
+
 ## What it is
 
 Shamlss is a lightweight self-hosted music server + mobile/desktop client. You install a small daemon on your PC (Windows, Linux, or macOS), point it at your music folder, and stream to any device on your network using the Android app, the built-in web player, or the Windows desktop app.
