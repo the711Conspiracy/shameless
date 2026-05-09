@@ -55,13 +55,30 @@ async function start(httpPort = 7432) {
 
   app.get('/peers', (req, res) => {
     const dbCore = require('./core/db')
-    const since = Date.now() - 30000  // online = seen in last 30s
+    const since = Date.now() - 30000
     const peers = dbCore.prepare(`
       SELECT node_id, last_ip, last_port, last_seen_ts,
              (last_seen_ts > ?) as online
       FROM peers ORDER BY last_seen_ts DESC
     `).all(since)
     res.json(peers)
+  })
+
+  // Web player pod member list — maps peers to the shape the UI expects
+  app.get('/pod/members', (req, res) => {
+    const dbCore = require('./core/db')
+    const since = Date.now() - 30000
+    const peers = dbCore.prepare(`
+      SELECT node_id, last_ip, last_seen_ts, (last_seen_ts > ?) as online
+      FROM peers ORDER BY last_seen_ts DESC
+    `).all(since)
+    res.json(peers.map(p => ({
+      id: p.node_id,
+      name: p.node_id.slice(0, 8),
+      online: !!p.online,
+      last_ip: p.last_ip,
+      now_playing: null,
+    })))
   })
 
   app.get('/ping', (req, res) => {

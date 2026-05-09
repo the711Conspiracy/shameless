@@ -7,6 +7,7 @@ const mm = require('music-metadata')
 const db = require('../../core/db')
 const events = require('../events')
 const log = require('../../core/log')
+const lyricsFetcher = require('./lyrics-fetcher')
 
 const AUDIO_EXTS = new Set(['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.opus'])
 const _watchers = new Map()
@@ -280,29 +281,75 @@ router.get('/art/:track_id', (req, res) => {
   res.status(404).end()
 })
 
-router.get('/lyrics/:track_id', (req, res) => {
-  const track = db.prepare('SELECT path FROM tracks WHERE id = ?').get(req.params.track_id)
-  if (!track) return res.status(404).end()
+router.get('/lyrics/:track_id', async (req, res) => {
+  const track = db.prepare('SELECT id, path, title, artist, album, duration FROM tracks WHERE id = ?').get(req.params.track_id)
+  if (!track) return res.status(404).json({ error: 'track not found' })
 
+  // 1. Sidecar .lrc file (synced, highest priority)
   const base = track.path.replace(/\.[^.]+$/, '')
   const lrcPath = base + '.lrc'
   if (fs.existsSync(lrcPath)) {
     const raw = fs.readFileSync(lrcPath, 'utf8')
-    return res.json({ source: 'lrc', lines: parseLRC(raw) })
+    return res.json({ source: 'lrc_file', lines: parseLRC(raw), synced: true })
   }
 
-  mm.parseFile(track.path, { skipCovers: true }).then(meta => {
-    const lyrics = meta.common.lyrics?.[0] || meta.common.unsynchronisedLyrics
-    if (!lyrics) return res.status(404).end()
-    if (typeof lyrics === 'string') {
-      return res.json({ source: 'embedded', lines: lyrics.split('\n').map(t => ({ text: t })) })
+  // 2. Embedded metadata (ID3 USLT / SYLT)
+  try {
+    const meta = await mm.parseFile(track.path, { skipCovers: true })
+    const embedded = meta.common.lyrics?.[0] || meta.common.unsynchronisedLyrics
+    if (embedded) {
+      const text = typeof embedded === 'string' ? embedded : String(embedded)
+      return res.json({ source: 'embedded', lines: text.split('\n').map(t => ({ text: t })), synced: false })
     }
-    res.json({ source: 'embedded', lines: [{ text: lyrics }] })
-  }).catch((e) => {
-    log.debug('library', `lyrics parse failed: ${track.path}`, e)
-    res.status(404).end()
-  })
+  } catch (e) {
+    log.debug('library', `embedded lyrics parse failed: ${track.path}`, e)
+  }
+
+  // 3. DB cache
+  const cached = lyricsFetcher.getCached(db, track.id)
+  if (cached) {
+    return res.json(_formatLyrics(cached))
+  }
+
+  // 4. Online providers (LRCLIB → lyrics.ovh → Genius → AZLyrics)
+  try {
+    const result = await lyricsFetcher.fetchLyrics(track)
+    if (result) {
+      lyricsFetcher.setCached(db, track.id, result)
+      return res.json(_formatLyrics(result))
+    }
+  } catch (e) {
+    log.warn('lyrics', `fetch error for ${track.id}: ${e.message}`)
+  }
+
+  res.status(404).json({ error: 'lyrics not found' })
 })
+
+// POST /library/lyrics/:track_id/refresh — evict cache and re-fetch
+router.post('/lyrics/:track_id/refresh', async (req, res) => {
+  const track = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(req.params.track_id)
+  if (!track) return res.status(404).json({ error: 'track not found' })
+  lyricsFetcher.clearCache(db, track.id)
+  try {
+    const result = await lyricsFetcher.fetchLyrics(track)
+    if (result) {
+      lyricsFetcher.setCached(db, track.id, result)
+      return res.json({ refreshed: true, ..._formatLyrics(result) })
+    }
+    res.json({ refreshed: true, source: 'none', lines: [] })
+  } catch (e) {
+    log.error('lyrics', `refresh error: ${e.message}`)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+function _formatLyrics({ plain, sync, source }) {
+  if (sync) {
+    return { source, lines: parseLRC(sync), synced: true }
+  }
+  const lines = (plain || '').split('\n').map(t => ({ text: t }))
+  return { source, lines, synced: false }
+}
 
 function parseLRC(raw) {
   const lines = []

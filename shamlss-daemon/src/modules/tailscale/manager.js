@@ -5,6 +5,22 @@ const path = require('path')
 const os = require('os')
 const log = require('../../core/log')
 
+// Resolve the tailscale binary — check common install locations when not on PATH
+const _WIN_PATHS = [
+  'C:\\Program Files\\Tailscale\\tailscale.exe',
+  'C:\\Program Files (x86)\\Tailscale\\tailscale.exe',
+]
+let _bin = null
+function _resolveBin() {
+  if (_bin) return _bin
+  if (os.platform() !== 'win32') { _bin = 'tailscale'; return _bin }
+  for (const p of _WIN_PATHS) {
+    if (fs.existsSync(p)) { _bin = `"${p}"`; return _bin }
+  }
+  _bin = 'tailscale'  // fall back — may be in PATH after system restart
+  return _bin
+}
+
 const STATE_DIR = path.join(os.homedir(), '.shamlss')
 const CONFIG_FILE = path.join(STATE_DIR, 'tailscale.json')
 const TSNET_DIR = path.join(STATE_DIR, 'tsnet')  // state dir for future embedded tsnet
@@ -51,15 +67,17 @@ function getConfig() {
 }
 
 function _run(cmd, timeoutMs = 10000) {
+  const bin = _resolveBin()
+  const full = cmd.replace(/^tailscale\b/, bin)
   return new Promise((resolve, reject) => {
-    exec(cmd, { timeout: timeoutMs }, (err, stdout, stderr) => {
+    exec(full, { timeout: timeoutMs }, (err, stdout, stderr) => {
       if (err) reject(new Error((stderr || err.message).trim()))
       else resolve(stdout.trim())
     })
   })
 }
 
-// Returns true if the `tailscale` binary is on PATH
+// Returns true if the tailscale binary is reachable
 async function isInstalled() {
   try {
     await _run('tailscale version', 3000)

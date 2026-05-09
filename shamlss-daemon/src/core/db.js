@@ -201,6 +201,14 @@ db.exec(`
     position_ms INTEGER NOT NULL,
     updated_ts INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS lyrics_cache (
+    track_id TEXT PRIMARY KEY,
+    plain_lyrics TEXT,
+    sync_lyrics TEXT,
+    source TEXT NOT NULL,
+    fetched_ts INTEGER NOT NULL
+  );
 `)
 
 module.exports = db
