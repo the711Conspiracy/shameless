@@ -924,6 +924,25 @@
         </div>
 
         <div class="settings-group">
+          <div class="settings-group-label" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Remote Access (Tailscale)</span>
+            <button id="ts-action-btn" class="btn-primary" style="display:none" onclick="tailscaleAction()">CONNECT</button>
+          </div>
+          <div class="node-info" id="tailscale-info">Loading…</div>
+        </div>
+
+        <!-- Tailscale QR modal -->
+        <div id="ts-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9000;display:none;align-items:center;justify-content:center">
+          <div style="background:var(--surface);border:1px solid var(--line);padding:32px;max-width:340px;width:100%;text-align:center">
+            <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:0.1em;color:var(--text-mute);margin-bottom:16px">SCAN WITH TAILSCALE APP</div>
+            <img id="ts-qr-img" src="" alt="Tailscale QR" style="width:200px;height:200px;display:block;margin:0 auto 16px">
+            <div id="ts-auth-url" style="font-family:'Courier New',monospace;font-size:10px;color:var(--text-dim);word-break:break-all;margin-bottom:20px"></div>
+            <div style="font-size:12px;color:var(--text-mute);margin-bottom:20px">After scanning, Tailscale will connect automatically.<br>Then use the IP shown below in the mobile app.</div>
+            <button class="btn-primary" onclick="closeTsModal()">DONE</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
           <div class="settings-group-label">Keyboard Shortcuts</div>
           <div class="node-info" style="font-family:inherit;font-size:12px;line-height:2">
             <b>Space</b> — Play / Pause &nbsp;&nbsp; <b>← →</b> — Prev / Next<br>
@@ -1865,6 +1884,9 @@ async function renderSettings() {
   const si = document.getElementById('stats-info')
   if (si) si.innerHTML = `${stats.trackCount ?? 0} tracks · ${stats.artistCount ?? 0} artists · ${stats.albumCount ?? 0} albums<br>${stats.playCount ?? 0} plays total`
 
+  // Tailscale / remote access
+  renderTailscaleStatus()
+
   // Log
   loadDaemonLog()
   clearInterval(_logInterval)
@@ -1891,6 +1913,96 @@ async function loadDaemonLog() {
     }).join('') || '<span style="color:var(--text-dim)">No log entries</span>'
     if (atBottom) panel.scrollTop = panel.scrollHeight
   } catch {}
+}
+
+async function renderTailscaleStatus() {
+  const el = document.getElementById('tailscale-info')
+  const btn = document.getElementById('ts-action-btn')
+  if (!el) return
+  try {
+    const ts = await apiFetch('/tailscale/status')
+    if (!ts) { el.innerHTML = 'Feature disabled'; return }
+
+    if (!ts.available) {
+      el.innerHTML = `Not installed &mdash; <a href="https://tailscale.com/download" target="_blank" style="color:var(--accent)">tailscale.com/download</a><br>
+        <span style="font-size:10px;margin-top:4px;display:block">Windows: <span style="color:var(--text)">winget install Tailscale.Tailscale</span></span>`
+      btn.style.display = 'none'
+      return
+    }
+
+    if (ts.state === 'Running') {
+      el.innerHTML = `<b style="color:var(--online)">Connected</b><br>
+        Remote address: <span style="color:var(--text)">${esc(ts.tailscale_ip || '—')}:7432</span><br>
+        <span style="font-size:10px;color:var(--text-dim)">Use this address in the Shamlss mobile app when away from home</span>`
+      btn.style.display = 'block'
+      btn.textContent = 'DISCONNECT'
+    } else if (ts.state === 'NeedsLogin' || ts.state === 'NoState') {
+      el.innerHTML = `<b style="color:var(--warn)">${esc(ts.state)}</b> &mdash; not connected to tailnet`
+      btn.style.display = 'block'
+      btn.textContent = 'CONNECT'
+    } else {
+      el.innerHTML = `State: <b>${esc(ts.state)}</b>${ts.error ? ` &mdash; ${esc(ts.error)}` : ''}`
+      btn.style.display = 'block'
+      btn.textContent = 'CONNECT'
+    }
+  } catch (e) {
+    el.innerHTML = `Error: ${esc(e.message)}`
+    if (btn) btn.style.display = 'none'
+  }
+}
+
+async function tailscaleAction() {
+  const btn = document.getElementById('ts-action-btn')
+  const label = btn ? btn.textContent : ''
+
+  if (label === 'DISCONNECT') {
+    btn.textContent = '…'
+    await fetch('/tailscale/down', { method: 'POST' }).catch(() => {})
+    renderTailscaleStatus()
+    return
+  }
+
+  // CONNECT — fetch auth URL + QR from daemon
+  btn.textContent = '…'
+  btn.disabled = true
+  try {
+    const r = await fetch('/tailscale/auth')
+    const data = await r.json()
+    if (!r.ok) {
+      showToast('error', data.error || 'Tailscale error')
+      if (data.install_url) window.open(data.install_url, '_blank')
+      return
+    }
+    if (data.status === 'already_authenticated') {
+      renderTailscaleStatus()
+      return
+    }
+    // Show QR modal
+    document.getElementById('ts-qr-img').src = data.qr
+    document.getElementById('ts-auth-url').textContent = data.auth_url
+    const modal = document.getElementById('ts-modal')
+    modal.style.display = 'flex'
+    // Poll for connection every 3s while modal is open
+    const poll = setInterval(async () => {
+      if (modal.style.display === 'none') { clearInterval(poll); return }
+      const st = await apiFetch('/tailscale/status').catch(() => null)
+      if (st && st.state === 'Running') {
+        clearInterval(poll)
+        closeTsModal()
+        renderTailscaleStatus()
+        showToast('ok', `Connected · ${st.tailscale_ip}:7432`)
+      }
+    }, 3000)
+  } catch (e) {
+    showToast('error', e.message)
+  } finally {
+    if (btn) { btn.textContent = 'CONNECT'; btn.disabled = false }
+  }
+}
+
+function closeTsModal() {
+  const m = document.getElementById('ts-modal')
+  if (m) m.style.display = 'none'
 }
 
 async function addFolder() {
