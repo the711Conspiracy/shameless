@@ -51,6 +51,7 @@ class _AppShellState extends State<AppShell> {
 
   SleeveTints _tints = SleeveTints.brand;
   String? _lastArtUrl;
+  StreamSubscription<String>? _playerErrorSub;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _AppShellState extends State<AppShell> {
     _sleepTimer.addListener(() => setState(() {}));
     _daemon.addListener(_onDaemonChanged);
     _errorSub = _daemon.errors.listen(_onDaemonError);
+    _playerErrorSub = _player.errors.listen(_onDaemonError);
     _tryAutoConnect();
   }
 
@@ -112,6 +114,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void dispose() {
     _errorSub?.cancel();
+    _playerErrorSub?.cancel();
     _daemon.removeListener(_onDaemonChanged);
     _sleepTimer.dispose();
     _player.dispose();
@@ -204,13 +207,6 @@ class _SleeveBottomNav extends StatelessWidget {
   });
 
   static const _labels = ['LIBRARY', 'LISTS', 'NOW\nPLAYING', 'PODS', 'HISTORY'];
-  static const _icons  = [
-    Icons.library_music_outlined,
-    Icons.queue_music_outlined,
-    Icons.album_outlined,
-    Icons.headphones_outlined,
-    Icons.history_outlined,
-  ];
 
   @override
   Widget build(BuildContext context) {

@@ -52,11 +52,14 @@ class _PodsScreenState extends State<PodsScreen> with SingleTickerProviderStateM
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await http.get(Uri.parse('${widget.daemon.base}/pods'));
+      final res = await http.get(Uri.parse('${widget.daemon.base}/pods'))
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200 && mounted) {
         setState(() { _pods = List<Map<String, dynamic>>.from(jsonDecode(res.body)); _loading = false; });
+      } else if (mounted) {
+        setState(() => _loading = false);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -345,11 +348,14 @@ class _PodDetailScreenState extends State<PodDetailScreen> with SingleTickerProv
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await http.get(Uri.parse('${widget.daemon.base}/pods/${widget.pod['pod_id']}'));
+      final res = await http.get(Uri.parse('${widget.daemon.base}/pods/${widget.pod['pod_id']}'))
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200 && mounted) {
         setState(() { _detail = Map<String, dynamic>.from(jsonDecode(res.body)); _loading = false; });
+      } else if (mounted) {
+        setState(() => _loading = false);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
   }

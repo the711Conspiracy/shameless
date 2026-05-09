@@ -44,13 +44,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _playTrack(Map<String, dynamic> item) {
-    final track = {
-      'id': item['id'],
-      'title': item['title'],
-      'artist': item['artist'],
-      'album': item['album'],
-      'art_hash': item['art_hash'],
-    };
+    // Pass all available fields so replay_gain, format etc. are available to the player
+    final track = Map<String, dynamic>.from(item);
     widget.player.playQueue([track], 0, widget.daemon.streamUrl, artUrlBuilder: widget.daemon.artUrl);
   }
 

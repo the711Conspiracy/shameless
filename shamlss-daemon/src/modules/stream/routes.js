@@ -27,7 +27,7 @@ router.get('/:track_id', (req, res) => {
       )
       const meta = db.prepare('SELECT title, artist FROM tracks WHERE id = ?').get(req.params.track_id)
       events.emit('audio.track.started', { track_id: req.params.track_id, ...meta })
-      log.debug('stream', `play: ${meta?.title || req.params.track_id}`)
+      log.info('stream', `play: ${meta?.title || req.params.track_id} (${meta?.artist || 'unknown'})`)
     } catch (e) {
       log.warn('stream', 'play history write failed', e)
     }
@@ -51,11 +51,16 @@ router.get('/:track_id', (req, res) => {
     const [startStr, endStr] = range.replace(/bytes=/, '').split('-')
     const start = parseInt(startStr, 10) || 0
     const end = endStr ? parseInt(endStr, 10) : total - 1
-    const chunkSize = end - start + 1
-    res.setHeader('Content-Range', `bytes ${start}-${end}/${total}`)
+    if (isNaN(start) || isNaN(end) || start < 0 || end < start || start >= total) {
+      res.setHeader('Content-Range', `bytes */${total}`)
+      return res.status(416).end()
+    }
+    const clampedEnd = Math.min(end, total - 1)
+    const chunkSize = clampedEnd - start + 1
+    res.setHeader('Content-Range', `bytes ${start}-${clampedEnd}/${total}`)
     res.setHeader('Content-Length', chunkSize)
     res.statusCode = 206
-    fs.createReadStream(track.path, { start, end }).pipe(res)
+    fs.createReadStream(track.path, { start, end: clampedEnd }).pipe(res)
   } else {
     res.setHeader('Content-Length', total)
     res.statusCode = 200

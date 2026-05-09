@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final results = await Future.wait([
-      http.get(Uri.parse('${widget.daemon.base}/settings')).then((r) => r.statusCode == 200 ? jsonDecode(r.body) : null).catchError((_) => null),
+      http.get(Uri.parse('${widget.daemon.base}/settings')).timeout(const Duration(seconds: 10)).then((r) => r.statusCode == 200 ? jsonDecode(r.body) : null).catchError((_) => null),
       widget.daemon.getStats(),
       widget.daemon.getAnalysisStatus(),
     ]);

@@ -15,10 +15,8 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-// Tab indices
-const int _kTracks  = 0;
-const int _kArtists = 1;
-const int _kAlbums  = 2;
+// Tab index for tracks (artists and albums are 1 and 2, accessed by TabController directly)
+const int _kTracks = 0;
 
 class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;

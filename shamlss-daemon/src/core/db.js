@@ -181,6 +181,12 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_track_reactions_track ON track_reactions(track_id, ts DESC);
   CREATE INDEX IF NOT EXISTS idx_chat_messages_pod ON chat_messages(pod_id, ts DESC);
+  CREATE INDEX IF NOT EXISTS idx_tracks_file_hash ON tracks(file_hash);
+  CREATE INDEX IF NOT EXISTS idx_tracks_path ON tracks(path);
+  CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist);
+  CREATE INDEX IF NOT EXISTS idx_play_history_track ON play_history(track_id);
+  CREATE INDEX IF NOT EXISTS idx_play_history_ts ON play_history(played_ts DESC);
+  CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist ON playlist_tracks(playlist_id, position);
 
   CREATE TABLE IF NOT EXISTS track_chapters (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

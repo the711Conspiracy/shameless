@@ -317,16 +317,19 @@ function parseLRC(raw) {
 }
 
 // F59 Podcast/Audiobook — type tagging, chapters, resume
+// type=null resets to 'music' (unmark)
 router.patch('/tracks/:id', (req, res) => {
-  const { type } = req.body || {}
-  if (!type || !['music', 'podcast', 'audiobook'].includes(type)) {
-    return res.status(400).json({ error: 'type must be music, podcast, or audiobook' })
+  const raw = req.body || {}
+  if (!('type' in raw)) return res.status(400).json({ error: 'type required (music, podcast, audiobook, or null)' })
+  const effectiveType = raw.type === null ? 'music' : raw.type
+  if (!['music', 'podcast', 'audiobook'].includes(effectiveType)) {
+    return res.status(400).json({ error: 'type must be music, podcast, audiobook, or null' })
   }
   const track = db.prepare('SELECT id FROM tracks WHERE id = ?').get(req.params.id)
   if (!track) return res.status(404).json({ error: 'not found' })
-  db.prepare('UPDATE tracks SET type = ? WHERE id = ?').run(type, req.params.id)
-  log.info('library', `track ${req.params.id} type -> ${type}`)
-  res.json({ id: req.params.id, type })
+  db.prepare('UPDATE tracks SET type = ? WHERE id = ?').run(effectiveType, req.params.id)
+  log.info('library', `track ${req.params.id} type -> ${effectiveType}`)
+  res.json({ id: req.params.id, type: effectiveType })
 })
 
 router.get('/tracks/:id/chapters', (req, res) => {
@@ -363,8 +366,10 @@ router.delete('/folders', (req, res) => {
   const { folder_path } = req.body
   if (!folder_path) return res.status(400).json({ error: 'folder_path required' })
   db.prepare('DELETE FROM pod_scopes WHERE folder_path = ? AND pod_id = ?').run(folder_path, 'local')
-  db.prepare("DELETE FROM tracks WHERE path LIKE ?").run(folder_path.replace(/\\/g, '/').replace(/\/$/, '') + '%')
-  db.prepare("DELETE FROM tracks WHERE path LIKE ?").run(folder_path.replace(/\/$/, '') + '%')
+  // Match exact folder and everything beneath it (with trailing sep) — prevents matching /music-extra when removing /music
+  const sep = folder_path.includes('/') ? '/' : '\\'
+  const prefix = folder_path.replace(/[/\\]$/, '') + sep
+  db.prepare("DELETE FROM tracks WHERE path = ? OR path LIKE ?").run(folder_path, prefix + '%')
   const w = _watchers.get(folder_path)
   if (w) {
     try { w.close() } catch (e) { log.warn('library', `watcher close failed: ${folder_path}`, e) }

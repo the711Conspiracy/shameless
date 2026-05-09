@@ -6,7 +6,12 @@ const flagsPath = path.join(__dirname, '..', '..', '..', 'config', 'features.jso
 let flags = {}
 
 function reload() {
-  flags = JSON.parse(fs.readFileSync(flagsPath, 'utf8'))
+  try {
+    flags = JSON.parse(fs.readFileSync(flagsPath, 'utf8'))
+  } catch (e) {
+    process.stderr.write(`[feature-flags] failed to load ${flagsPath}: ${e.message}\n`)
+    // Keep previously loaded flags; do not reset to empty object
+  }
 }
 
 function is(name) {

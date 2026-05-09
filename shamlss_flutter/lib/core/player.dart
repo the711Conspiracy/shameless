@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -15,12 +16,14 @@ class ShamlssPlayer extends ChangeNotifier {
   RepeatMode _repeat = RepeatMode.none;
   int _crossfadeSec = 0;
   double _targetVol = 1.0;
-  String Function(String)? _artUrlBuilder;
   bool _autoMixEnabled = false;
   double? _currentBpm;
   String? _pendingBpmTrackId;
 
   Future<double?> Function(String trackId)? bpmProvider;
+
+  final StreamController<String> _errorController = StreamController.broadcast();
+  Stream<String> get errors => _errorController.stream;
 
   AudioPlayer get player => _player;
   List<Map<String, dynamic>> get queue => _queue;
@@ -116,7 +119,6 @@ class ShamlssPlayer extends ChangeNotifier {
   }
 
   Future<void> restoreQueue(String Function(String) urlBuilder, {String Function(String)? artUrlBuilder}) async {
-    _artUrlBuilder = artUrlBuilder;
     final saved = await QueuePersistence.load();
     if (saved == null || saved.queue.isEmpty) return;
     _queue = saved.queue;
@@ -124,13 +126,15 @@ class ShamlssPlayer extends ChangeNotifier {
 
     final sources = _queue.map((t) => _makeSource(t, urlBuilder(t['id'] as String))).toList();
 
-    _source = ConcatenatingAudioSource(children: sources, useLazyPreparation: false);
+    _source = ConcatenatingAudioSource(children: sources);
     try {
       await _player.setAudioSource(_source!, initialIndex: _index);
       if (saved.positionMs > 0) await _player.seek(Duration(milliseconds: saved.positionMs));
       _applyReplayGain(_queue[_index]);
       _loadBpmForTrack(_queue[_index]['id'] as String);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ShamlssPlayer restoreQueue error: $e');
+    }
     notifyListeners();
   }
 
@@ -169,13 +173,17 @@ class ShamlssPlayer extends ChangeNotifier {
     _index = startIndex;
     if (_shuffle) _buildShuffleOrder(startIndex);
 
-    _artUrlBuilder = artUrlBuilder;
     final sources = _queue.map((t) => _makeSource(t, urlBuilder(t['id'] as String))).toList();
-    _source = ConcatenatingAudioSource(children: sources, useLazyPreparation: false);
-    await _player.setAudioSource(_source!, initialIndex: startIndex);
-    _applyReplayGain(tracks[startIndex]);
-    _loadBpmForTrack(tracks[startIndex]['id'] as String);
-    await _player.play();
+    _source = ConcatenatingAudioSource(children: sources);
+    try {
+      await _player.setAudioSource(_source!, initialIndex: startIndex);
+      _applyReplayGain(tracks[startIndex]);
+      _loadBpmForTrack(tracks[startIndex]['id'] as String);
+      await _player.play();
+    } catch (e) {
+      debugPrint('ShamlssPlayer playQueue error: $e');
+      _errorController.add('Playback error: $e');
+    }
     notifyListeners();
   }
 
@@ -284,6 +292,7 @@ class ShamlssPlayer extends ChangeNotifier {
 
   @override
   void dispose() {
+    _errorController.close();
     _player.dispose();
     super.dispose();
   }

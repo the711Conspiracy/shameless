@@ -54,7 +54,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
         Uri.parse('${widget.daemon.base}/library/import'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'csv': result['csv'], 'playlist_name': result['name']}),
-      );
+      ).timeout(const Duration(seconds: 120));
       if (!mounted) return;
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
