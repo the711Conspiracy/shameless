@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:7432; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src http://127.0.0.1:7432 data:">
   <title>Shamlss</title>
   <style>
     /* ── Design tokens ── */
@@ -864,7 +863,7 @@
 <script>
 'use strict'
 
-const BASE = 'http://127.0.0.1:7432'
+const BASE = ''  // relative URLs — works from any origin serving this file
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
@@ -897,7 +896,7 @@ function fmtDur(secs) {
 }
 
 function artUrl(id) {
-  return `${BASE}/library/tracks/${id}/art`
+  return `${BASE}/library/art/${id}`
 }
 
 function streamUrl(id) {
@@ -1240,7 +1239,7 @@ function renderTrackTable(tracks) {
       <td style="max-width:0">${esc(t.artist ?? '')}</td>
       <td style="max-width:0">${esc(t.album ?? '')}</td>
       <td class="track-mono">${esc(t.format?.toUpperCase() ?? '')}</td>
-      <td class="track-mono">${fmtDur(t.duration)}</td>
+      <td class="track-mono">${fmtDur(t.duration ? t.duration / 1000 : 0)}</td>
     </tr>
   `).join('')
 }
@@ -1321,7 +1320,7 @@ function renderHistoryTable() {
       <td class="track-title" style="max-width:0">${esc(t.title ?? 'Unknown')}</td>
       <td style="max-width:0">${esc(t.artist ?? '')}</td>
       <td style="max-width:0">${esc(t.album ?? '')}</td>
-      <td class="track-mono">${t.played_at ? new Date(t.played_at).toLocaleDateString() : ''}</td>
+      <td class="track-mono">${t.played_ts ? new Date(t.played_ts).toLocaleDateString() : ''}</td>
     </tr>
   `).join('')
 }
