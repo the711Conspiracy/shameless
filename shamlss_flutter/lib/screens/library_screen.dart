@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/daemon_client.dart';
 import '../core/player.dart';
 import '../core/theme.dart';
+
 class LibraryScreen extends StatefulWidget {
   final DaemonClient daemon;
   final ShamlssPlayer player;
@@ -13,7 +15,10 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-const int _kTracks = 0;
+// Tab indices
+const int _kTracks  = 0;
+const int _kArtists = 1;
+const int _kAlbums  = 2;
 
 class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
@@ -27,7 +32,8 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
   final _folderController = TextEditingController();
   final _searchController = TextEditingController();
   String _query = '';
-  final bool _isMobile = defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+  final bool _isMobile = defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -71,7 +77,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
       final result = await widget.daemon.addFolder(p);
       _folderController.clear();
       final indexed = result['indexed'] ?? 0;
-      final found = result['files_found'] ?? 0;
+      final found   = result['files_found'] ?? 0;
       final skipped = result['skipped'] ?? 0;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -93,34 +99,49 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
   }
 
   Future<void> _onLongPress(Map<String, dynamic> track) async {
+    final tints = SleeveTintsProvider.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: ShamlssColors.card,
+      backgroundColor: tints.surface,
       builder: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(track['title'] as String? ?? 'Unknown', style: const TextStyle(color: ShamlssColors.text, fontSize: 13, fontWeight: FontWeight.w600)),
-              if (track['artist'] != null) Text(track['artist'] as String, style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 11)),
+              Text(track['title'] as String? ?? 'Unknown',
+                  style: GoogleFonts.interTight(color: tints.text, fontSize: 13, fontWeight: FontWeight.w600)),
+              if (track['artist'] != null)
+                Text(track['artist'] as String,
+                    style: GoogleFonts.interTight(color: tints.textMute, fontSize: 11)),
             ])),
           ]),
         ),
-        const Divider(height: 1),
-        ListTile(dense: true, leading: const Icon(Icons.playlist_add, color: ShamlssColors.amberDim, size: 18),
-          title: const Text('Add to playlist', style: TextStyle(color: ShamlssColors.text, fontSize: 13)),
+        Divider(height: 1, color: tints.line),
+        ListTile(dense: true,
+          leading: Icon(Icons.playlist_add, color: tints.accent, size: 18),
+          title: Text('Add to playlist', style: GoogleFonts.interTight(color: tints.text, fontSize: 13)),
           onTap: () => Navigator.pop(context, 'playlist')),
-        ListTile(dense: true, leading: const Icon(Icons.add_to_queue, color: ShamlssColors.amberDim, size: 18),
-          title: const Text('Add to shared queue', style: TextStyle(color: ShamlssColors.text, fontSize: 13)),
+        ListTile(dense: true,
+          leading: Icon(Icons.add_to_queue, color: tints.accent, size: 18),
+          title: Text('Add to shared queue', style: GoogleFonts.interTight(color: tints.text, fontSize: 13)),
           onTap: () => Navigator.pop(context, 'shared_queue')),
-        ListTile(dense: true, leading: const Icon(Icons.skip_next_outlined, color: ShamlssColors.textMuted, size: 18),
-          title: const Text('Play next', style: TextStyle(color: ShamlssColors.text, fontSize: 13)),
+        ListTile(dense: true,
+          leading: Icon(Icons.skip_next_outlined, color: tints.textMute, size: 18),
+          title: Text('Play next', style: GoogleFonts.interTight(color: tints.text, fontSize: 13)),
           onTap: () => Navigator.pop(context, 'play_next')),
-        ListTile(dense: true, leading: const Icon(Icons.podcasts_outlined, color: ShamlssColors.textMuted, size: 18),
-          title: Text(track['type'] == 'podcast' ? 'Unmark podcast' : 'Mark as Podcast', style: const TextStyle(color: ShamlssColors.text, fontSize: 13)),
+        ListTile(dense: true,
+          leading: Icon(Icons.podcasts_outlined, color: tints.textMute, size: 18),
+          title: Text(
+            track['type'] == 'podcast' ? 'Unmark podcast' : 'Mark as Podcast',
+            style: GoogleFonts.interTight(color: tints.text, fontSize: 13),
+          ),
           onTap: () => Navigator.pop(context, 'mark_podcast')),
-        ListTile(dense: true, leading: const Icon(Icons.menu_book_outlined, color: ShamlssColors.textMuted, size: 18),
-          title: Text(track['type'] == 'audiobook' ? 'Unmark audiobook' : 'Mark as Audiobook', style: const TextStyle(color: ShamlssColors.text, fontSize: 13)),
+        ListTile(dense: true,
+          leading: Icon(Icons.menu_book_outlined, color: tints.textMute, size: 18),
+          title: Text(
+            track['type'] == 'audiobook' ? 'Unmark audiobook' : 'Mark as Audiobook',
+            style: GoogleFonts.interTight(color: tints.text, fontSize: 13),
+          ),
           onTap: () => Navigator.pop(context, 'mark_audiobook')),
         const SizedBox(height: 8),
       ]),
@@ -130,7 +151,8 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     if (action == 'play_next') {
       await widget.player.addToQueue(track, widget.daemon.streamUrl(track['id'] as String));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to queue'), duration: Duration(seconds: 2)));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to queue'), duration: Duration(seconds: 2)));
       return;
     }
 
@@ -146,16 +168,15 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           duration: const Duration(seconds: 2),
         ));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Update failed'),
-          duration: Duration(seconds: 2),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Update failed'), duration: Duration(seconds: 2)));
       }
       return;
     }
 
     if (action == 'shared_queue') {
-      final ok = await widget.daemon.addToCollabQueue(track['id'] as String, addedBy: widget.daemon.nodeName);
+      final ok = await widget.daemon.addToCollabQueue(
+          track['id'] as String, addedBy: widget.daemon.nodeName);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(ok ? 'Added to shared queue' : 'Failed to add to shared queue'),
@@ -168,18 +189,25 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
       final playlists = await widget.daemon.getPlaylists();
       if (!mounted) return;
       if (playlists.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No playlists — create one in the Playlists tab')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No playlists — create one in the Playlists tab')));
         return;
       }
+      final tints2 = SleeveTintsProvider.of(context);
       final chosen = await showModalBottomSheet<Map<String, dynamic>>(
         context: context,
-        backgroundColor: ShamlssColors.card,
+        backgroundColor: tints2.surface,
         builder: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(padding: EdgeInsets.all(16), child: Text('ADD TO PLAYLIST', style: TextStyle(color: ShamlssColors.amberDim, fontSize: 11, letterSpacing: 2))),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('ADD TO PLAYLIST',
+                style: GoogleFonts.jetBrainsMono(color: tints2.textMute, fontSize: 11, letterSpacing: 0.18)),
+          ),
           ...playlists.map((pl) => ListTile(
             dense: true,
-            leading: const Icon(Icons.queue_music, color: ShamlssColors.amberDim, size: 18),
-            title: Text(pl['name'] as String, style: const TextStyle(color: ShamlssColors.text, fontSize: 13)),
+            leading: Icon(Icons.queue_music, color: tints2.accent, size: 18),
+            title: Text(pl['name'] as String,
+                style: GoogleFonts.interTight(color: tints2.text, fontSize: 13)),
             onTap: () => Navigator.pop(context, pl),
           )),
           const SizedBox(height: 16),
@@ -196,7 +224,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     final filtered = _filteredTracks();
     final track = filtered[indexInFiltered];
     final globalIndex = _tracks.indexWhere((t) => t['id'] == track['id']);
-    widget.player.playQueue(_tracks, globalIndex >= 0 ? globalIndex : 0, widget.daemon.streamUrl, artUrlBuilder: widget.daemon.artUrl);
+    widget.player.playQueue(
+        _tracks, globalIndex >= 0 ? globalIndex : 0, widget.daemon.streamUrl,
+        artUrlBuilder: widget.daemon.artUrl);
   }
 
   List<Map<String, dynamic>> _filteredTracks() {
@@ -204,49 +234,51 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     final q = _query.toLowerCase();
     return _tracks.where((t) {
       return (t['title'] as String? ?? '').toLowerCase().contains(q) ||
-             (t['artist'] as String? ?? '').toLowerCase().contains(q) ||
-             (t['album'] as String? ?? '').toLowerCase().contains(q);
+          (t['artist'] as String? ?? '').toLowerCase().contains(q) ||
+          (t['album'] as String? ?? '').toLowerCase().contains(q);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final tints = SleeveTintsProvider.of(context);
     final filtered = _filteredTracks();
+
     return Scaffold(
+      backgroundColor: tints.base,
       appBar: AppBar(
+        backgroundColor: tints.base,
+        elevation: 0,
         title: _searching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: ShamlssColors.text, fontSize: 14),
-                decoration: const InputDecoration(
+                style: GoogleFonts.interTight(color: tints.text, fontSize: 14),
+                decoration: InputDecoration(
                   hintText: 'Search tracks…',
-                  hintStyle: TextStyle(color: ShamlssColors.textMuted),
+                  hintStyle: GoogleFonts.interTight(color: tints.textMute),
                   border: InputBorder.none,
                 ),
               )
-            : Row(children: [
-                const Text('LIBRARY', style: TextStyle(letterSpacing: 3, fontSize: 14)),
-                const SizedBox(width: 12),
-                Text('${_tracks.length} tracks', style: const TextStyle(color: ShamlssColors.amberDim, fontSize: 12, fontWeight: FontWeight.normal)),
-              ]),
-        bottom: _searching ? null : TabBar(
-          controller: _tabController,
-          labelColor: ShamlssColors.amber,
-          unselectedLabelColor: ShamlssColors.textMuted,
-          indicatorColor: ShamlssColors.amber,
-          labelStyle: const TextStyle(fontSize: 11, letterSpacing: 1.5),
-          tabs: const [Tab(text: 'TRACKS'), Tab(text: 'ARTISTS'), Tab(text: 'ALBUMS')],
-        ),
+            : null,
+        bottom: _searching
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(height: 1, color: tints.line),
+              ),
         actions: [
           IconButton(
-            icon: Icon(_searching ? Icons.close : Icons.search, size: 18),
+            icon: Icon(_searching ? Icons.close : Icons.search, size: 18, color: tints.textMute),
             onPressed: () => setState(() {
               _searching = !_searching;
               if (!_searching) { _searchController.clear(); _query = ''; }
             }),
           ),
-          if (!_searching) IconButton(icon: const Icon(Icons.refresh, size: 18), onPressed: _load),
+          if (!_searching)
+            IconButton(
+                icon: Icon(Icons.refresh, size: 18, color: tints.textMute),
+                onPressed: _load),
           const SizedBox(width: 4),
         ],
       ),
@@ -255,186 +287,389 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         builder: (context, child) {
           final activePod = widget.daemon.activePod;
           return Column(children: [
-            if (activePod != null) _PodContextBanner(podName: activePod['name'] as String),
-            child!,
+            if (activePod != null)
+              _PodContextBanner(podName: activePod['name'] as String, tints: tints),
+            Expanded(child: child!),
           ]);
         },
         child: Column(children: [
-        if (!_isMobile) _FolderBar(controller: _folderController, folders: _folders, onAdd: _addFolder, onRemove: (f) async {
-          try {
-            await widget.daemon.removeFolder(f);
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Removed: $f'), duration: const Duration(seconds: 2)));
-          } catch (e) {
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Remove failed: $e'), backgroundColor: Colors.red.shade900));
-          }
-          _load();
-        }),
-        if (!_isMobile) const Divider(),
-        if (_history.isNotEmpty && !_searching && _tabController.index == _kTracks) _HistoryBar(
-          history: _history, daemon: widget.daemon, show: _showHistory,
-          onToggle: () => setState(() => _showHistory = !_showHistory),
-          onTap: (t) {
-            final globalIndex = _tracks.indexWhere((tr) => tr['id'] == t['id']);
-            if (globalIndex >= 0) widget.player.playQueue(_tracks, globalIndex, widget.daemon.streamUrl);
-          },
-        ),
-        Expanded(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator(color: ShamlssColors.amber, strokeWidth: 2))
-              : _searching
-                  ? (filtered.isEmpty
-                      ? _Empty(isMobile: _isMobile, isSearch: true)
-                      : _TrackList(tracks: filtered, currentId: widget.player.current?['id'], daemon: widget.daemon, onTap: _play, onLongPress: _onLongPress))
-                  : TabBarView(
-                      controller: _tabController,
-                      children: [
-                        // TRACKS
-                        _tracks.isEmpty
-                            ? _Empty(isMobile: _isMobile, isSearch: false)
-                            : _TrackList(tracks: _tracks, currentId: widget.player.current?['id'], daemon: widget.daemon, onTap: (i) => widget.player.playQueue(_tracks, i, widget.daemon.streamUrl, artUrlBuilder: widget.daemon.artUrl), onLongPress: _onLongPress),
-                        // ARTISTS
-                        _ArtistView(tracks: _tracks, daemon: widget.daemon, player: widget.player),
-                        // ALBUMS
-                        _AlbumView(tracks: _tracks, daemon: widget.daemon, player: widget.player),
-                      ],
-                    ),
-        ),
-      ]),
+          // ── Sleeve editorial header ──
+          if (!_searching)
+            _LibraryHeader(trackCount: _tracks.length, tints: tints),
+
+          // ── Desktop folder bar ──
+          if (!_isMobile)
+            _FolderBar(
+              controller: _folderController,
+              folders: _folders,
+              tints: tints,
+              onAdd: _addFolder,
+              onRemove: (f) async {
+                try {
+                  await widget.daemon.removeFolder(f);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Removed: $f'), duration: const Duration(seconds: 2)));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Remove failed: $e'), backgroundColor: Colors.red.shade900));
+                }
+                _load();
+              },
+            ),
+
+          if (!_isMobile)
+            Divider(height: 1, color: tints.line),
+
+          // ── Mono filter tabs ──
+          if (!_searching)
+            _FilterTabs(tabController: _tabController, tints: tints),
+
+          // ── History bar ──
+          if (_history.isNotEmpty && !_searching && _tabController.index == _kTracks)
+            _HistoryBar(
+              history: _history,
+              daemon: widget.daemon,
+              show: _showHistory,
+              tints: tints,
+              onToggle: () => setState(() => _showHistory = !_showHistory),
+              onTap: (t) {
+                final globalIndex = _tracks.indexWhere((tr) => tr['id'] == t['id']);
+                if (globalIndex >= 0)
+                  widget.player.playQueue(_tracks, globalIndex, widget.daemon.streamUrl);
+              },
+            ),
+
+          // ── Tab content ──
+          Expanded(
+            child: _loading
+                ? Center(child: CircularProgressIndicator(color: tints.accent, strokeWidth: 2))
+                : _searching
+                    ? (filtered.isEmpty
+                        ? _Empty(isMobile: _isMobile, isSearch: true, tints: tints)
+                        : _TrackList(
+                            tracks: filtered,
+                            currentId: widget.player.current?['id'],
+                            daemon: widget.daemon,
+                            tints: tints,
+                            onTap: _play,
+                            onLongPress: _onLongPress))
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // TRACKS
+                          _tracks.isEmpty
+                              ? _Empty(isMobile: _isMobile, isSearch: false, tints: tints)
+                              : _TrackList(
+                                  tracks: _tracks,
+                                  currentId: widget.player.current?['id'],
+                                  daemon: widget.daemon,
+                                  tints: tints,
+                                  onTap: (i) => widget.player.playQueue(
+                                      _tracks, i, widget.daemon.streamUrl,
+                                      artUrlBuilder: widget.daemon.artUrl),
+                                  onLongPress: _onLongPress),
+                          // ARTISTS
+                          _ArtistView(tracks: _tracks, daemon: widget.daemon, player: widget.player, tints: tints),
+                          // ALBUMS
+                          _AlbumGrid(tracks: _tracks, daemon: widget.daemon, player: widget.player, tints: tints),
+                        ],
+                      ),
+          ),
+        ]),
       ),
     );
   }
 }
 
+// ─── Library header ────────────────────────────────────────────────────────
+
+class _LibraryHeader extends StatelessWidget {
+  final int trackCount;
+  final SleeveTints tints;
+  const _LibraryHeader({required this.trackCount, required this.tints});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Eyebrow mono
+        Text(
+          '──── COLLECTION',
+          style: GoogleFonts.jetBrainsMono(
+            color: tints.textDim,
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.18,
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Newsreader 42 title
+        Text(
+          'The Library',
+          style: GoogleFonts.newsreader(
+            color: tints.text,
+            fontSize: 42,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.022,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Italic body subtitle
+        Text(
+          '$trackCount tracks in collection',
+          style: GoogleFonts.interTight(
+            color: tints.textMute,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Filter tabs ──────────────────────────────────────────────────────────
+
+class _FilterTabs extends StatelessWidget {
+  final TabController tabController;
+  final SleeveTints tints;
+  const _FilterTabs({required this.tabController, required this.tints});
+
+  static const _tabs = ['TRACKS', 'ARTISTS', 'ALBUMS'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: tints.line, width: 1)),
+      ),
+      child: TabBar(
+        controller: tabController,
+        isScrollable: true,
+        labelColor: tints.accent,
+        unselectedLabelColor: tints.textDim,
+        indicatorColor: tints.accent,
+        indicatorWeight: 2,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelStyle: GoogleFonts.jetBrainsMono(
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.14,
+        ),
+        unselectedLabelStyle: GoogleFonts.jetBrainsMono(
+          fontSize: 9,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.14,
+        ),
+        tabs: _tabs.map((t) => Tab(text: t, height: 36)).toList(),
+      ),
+    );
+  }
+}
+
+// ─── Pod context banner ────────────────────────────────────────────────────
+
 class _PodContextBanner extends StatelessWidget {
   final String podName;
-  const _PodContextBanner({required this.podName});
+  final SleeveTints tints;
+  const _PodContextBanner({required this.podName, required this.tints});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: ShamlssColors.amberDim.withOpacity(0.12),
+      color: tints.accentSoft,
       child: Row(children: [
-        const Icon(Icons.group, color: ShamlssColors.amber, size: 14),
+        Icon(Icons.group, color: tints.accent, size: 14),
         const SizedBox(width: 8),
-        Expanded(child: Text('Pod: $podName', style: const TextStyle(color: ShamlssColors.amber, fontSize: 12, letterSpacing: 0.5))),
+        Expanded(child: Text('Pod: $podName',
+            style: GoogleFonts.interTight(color: tints.accent, fontSize: 12))),
       ]),
     );
   }
 }
 
+// ─── Desktop folder bar ────────────────────────────────────────────────────
+
 class _FolderBar extends StatelessWidget {
   final TextEditingController controller;
   final List<String> folders;
+  final SleeveTints tints;
   final VoidCallback onAdd;
   final Function(String) onRemove;
-  const _FolderBar({required this.controller, required this.folders, required this.onAdd, required this.onRemove});
+  const _FolderBar({
+    required this.controller,
+    required this.folders,
+    required this.tints,
+    required this.onAdd,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: ShamlssColors.navy,
+      color: tints.surface,
       padding: const EdgeInsets.all(12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: TextField(
             controller: controller,
-            style: const TextStyle(color: ShamlssColors.text, fontSize: 13, fontFamily: 'monospace'),
-            decoration: const InputDecoration(
+            style: GoogleFonts.jetBrainsMono(color: tints.text, fontSize: 13),
+            decoration: InputDecoration(
               hintText: 'C:\\Users\\you\\Music',
-              hintStyle: TextStyle(color: ShamlssColors.textMuted, fontSize: 12),
-              prefixIcon: Icon(Icons.folder_outlined, color: ShamlssColors.amberDim, size: 18),
+              hintStyle: GoogleFonts.jetBrainsMono(color: tints.textMute, fontSize: 12),
+              prefixIcon: Icon(Icons.folder_outlined, color: tints.accent, size: 18),
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
             onSubmitted: (_) => onAdd(),
           )),
           const SizedBox(width: 8),
-          FilledButton(onPressed: onAdd, style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)), child: const Text('ADD', style: TextStyle(fontSize: 12, letterSpacing: 1.5))),
+          FilledButton(
+            onPressed: onAdd,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: Text('ADD', style: GoogleFonts.jetBrainsMono(fontSize: 12, letterSpacing: 0.14)),
+          ),
         ]),
         if (folders.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: folders.map((f) => _Chip(path: f, onRemove: () => onRemove(f))).toList()),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: folders.map((f) => _FolderChip(path: f, tints: tints, onRemove: () => onRemove(f))).toList(),
+          ),
         ],
       ]),
     );
   }
 }
 
-class _Chip extends StatelessWidget {
+class _FolderChip extends StatelessWidget {
   final String path;
+  final SleeveTints tints;
   final VoidCallback onRemove;
-  const _Chip({required this.path, required this.onRemove});
+  const _FolderChip({required this.path, required this.tints, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: ShamlssColors.surface, border: Border.all(color: ShamlssColors.amberDim.withOpacity(0.4)), borderRadius: BorderRadius.circular(4)),
+      decoration: BoxDecoration(
+        color: tints.surface,
+        border: Border.all(color: tints.line),
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.folder, color: ShamlssColors.amberDim, size: 12),
+        Icon(Icons.folder, color: tints.accent, size: 12),
         const SizedBox(width: 6),
-        Text(path.length > 28 ? '...${path.substring(path.length - 28)}' : path, style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 11, fontFamily: 'monospace')),
+        Text(
+          path.length > 28 ? '...${path.substring(path.length - 28)}' : path,
+          style: GoogleFonts.jetBrainsMono(color: tints.textMute, fontSize: 11),
+        ),
         const SizedBox(width: 6),
-        GestureDetector(onTap: onRemove, child: const Icon(Icons.close, color: ShamlssColors.textMuted, size: 12)),
+        GestureDetector(onTap: onRemove, child: Icon(Icons.close, color: tints.textMute, size: 12)),
       ]),
     );
   }
 }
 
+// ─── Track list ────────────────────────────────────────────────────────────
+
 class _TrackList extends StatelessWidget {
   final List<Map<String, dynamic>> tracks;
   final String? currentId;
   final DaemonClient daemon;
+  final SleeveTints tints;
   final Function(int) onTap;
   final Function(Map<String, dynamic>)? onLongPress;
-  const _TrackList({required this.tracks, required this.currentId, required this.daemon, required this.onTap, this.onLongPress});
+
+  const _TrackList({
+    required this.tracks,
+    required this.currentId,
+    required this.daemon,
+    required this.tints,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       itemCount: tracks.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) => Divider(height: 1, color: tints.line),
       itemBuilder: (context, i) {
         final t = tracks[i];
         final active = t['id'] == currentId;
         final hasArt = t['art_hash'] != null;
         return ListTile(
           dense: true,
+          tileColor: Colors.transparent,
           onTap: () => onTap(i),
           onLongPress: onLongPress != null ? () => onLongPress!(t) : null,
           leading: Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: active ? ShamlssColors.amberDim.withOpacity(0.2) : ShamlssColors.surface,
-              border: Border.all(color: active ? ShamlssColors.amber : ShamlssColors.divider),
-              borderRadius: BorderRadius.circular(4),
+              color: active ? tints.accentSoft : tints.surface,
+              border: Border.all(color: active ? tints.accent : tints.line),
             ),
             child: hasArt
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: Image.network(daemon.artUrl(t['id'] as String), fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(active ? Icons.graphic_eq : Icons.music_note, color: active ? ShamlssColors.amber : ShamlssColors.amberDim, size: 16)),
+                ? Image.network(
+                    daemon.artUrl(t['id'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(active ? Icons.graphic_eq : Icons.music_note,
+                            color: active ? tints.accent : tints.textDim, size: 16),
                   )
-                : Icon(active ? Icons.graphic_eq : Icons.music_note, color: active ? ShamlssColors.amber : ShamlssColors.amberDim, size: 16),
+                : Icon(active ? Icons.graphic_eq : Icons.music_note,
+                    color: active ? tints.accent : tints.textDim, size: 16),
           ),
-          title: Text(t['title'] ?? 'Unknown', style: TextStyle(color: active ? ShamlssColors.amber : ShamlssColors.text, fontSize: 13), overflow: TextOverflow.ellipsis),
-          subtitle: Text([t['artist'], t['album']].where((x) => x != null).join(' — '), style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 11), overflow: TextOverflow.ellipsis),
-          trailing: Text(t['format']?.toString().toUpperCase() ?? '', style: const TextStyle(color: ShamlssColors.amberDim, fontSize: 10, letterSpacing: 1)),
+          title: Text(
+            t['title'] ?? 'Unknown',
+            style: GoogleFonts.interTight(
+              color: active ? tints.accent : tints.text,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            [t['artist'], t['album']].where((x) => x != null).join(' — '),
+            style: GoogleFonts.interTight(color: tints.textMute, fontSize: 11),
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: Text(
+            t['format']?.toString().toUpperCase() ?? '',
+            style: GoogleFonts.jetBrainsMono(color: tints.textDim, fontSize: 10, letterSpacing: 0.14),
+          ),
         );
       },
     );
   }
 }
 
+// ─── History bar ───────────────────────────────────────────────────────────
+
 class _HistoryBar extends StatelessWidget {
   final List<Map<String, dynamic>> history;
   final DaemonClient daemon;
   final bool show;
+  final SleeveTints tints;
   final VoidCallback onToggle;
   final Function(Map<String, dynamic>) onTap;
-  const _HistoryBar({required this.history, required this.daemon, required this.show, required this.onToggle, required this.onTap});
+  const _HistoryBar({
+    required this.history,
+    required this.daemon,
+    required this.show,
+    required this.tints,
+    required this.onToggle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -443,71 +678,92 @@ class _HistoryBar extends StatelessWidget {
         onTap: onToggle,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: ShamlssColors.surface,
+          color: tints.surface,
           child: Row(children: [
-            const Icon(Icons.history, color: ShamlssColors.amberDim, size: 14),
+            Icon(Icons.history, color: tints.textDim, size: 14),
             const SizedBox(width: 8),
-            const Text('RECENTLY PLAYED', style: TextStyle(color: ShamlssColors.amberDim, fontSize: 10, letterSpacing: 2)),
+            Text('RECENTLY PLAYED',
+                style: GoogleFonts.jetBrainsMono(color: tints.textDim, fontSize: 10, letterSpacing: 0.18)),
             const Spacer(),
-            Icon(show ? Icons.expand_less : Icons.expand_more, color: ShamlssColors.divider, size: 16),
+            Icon(show ? Icons.expand_less : Icons.expand_more, color: tints.textDim, size: 16),
           ]),
         ),
       ),
-      if (show) SizedBox(
-        height: 80,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: history.length,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          itemBuilder: (_, i) {
-            final t = history[i];
-            return GestureDetector(
-              onTap: () => onTap(t),
-              child: Container(
-                width: 60, margin: const EdgeInsets.only(right: 8),
-                child: Column(children: [
-                  Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(color: ShamlssColors.card, borderRadius: BorderRadius.circular(4)),
-                    child: t['art_hash'] != null
-                        ? ClipRRect(borderRadius: BorderRadius.circular(4), child: Image.network(daemon.artUrl(t['id'] as String), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.music_note, color: ShamlssColors.amberDim, size: 20)))
-                        : const Icon(Icons.music_note, color: ShamlssColors.amberDim, size: 20),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(t['title'] ?? '?', style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 9), overflow: TextOverflow.ellipsis, maxLines: 1),
-                ]),
-              ),
-            );
-          },
+      if (show)
+        SizedBox(
+          height: 84,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: history.length,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemBuilder: (_, i) {
+              final t = history[i];
+              return GestureDetector(
+                onTap: () => onTap(t),
+                child: Container(
+                  width: 60,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: Column(children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      color: tints.surface,
+                      child: t['art_hash'] != null
+                          ? Image.network(daemon.artUrl(t['id'] as String), fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  Icon(Icons.music_note, color: tints.accent, size: 20))
+                          : Icon(Icons.music_note, color: tints.accent, size: 20),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(t['title'] ?? '?',
+                        style: GoogleFonts.interTight(color: tints.textMute, fontSize: 9),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1),
+                  ]),
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      const Divider(height: 1),
+      Divider(height: 1, color: tints.line),
     ]);
   }
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────
+
 class _Empty extends StatelessWidget {
   final bool isMobile;
   final bool isSearch;
-  const _Empty({required this.isMobile, required this.isSearch});
+  final SleeveTints tints;
+  const _Empty({required this.isMobile, required this.isSearch, required this.tints});
 
   @override
   Widget build(BuildContext context) {
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Icon(isSearch ? Icons.search_off : Icons.library_music_outlined, size: 48, color: ShamlssColors.divider),
+      Icon(isSearch ? Icons.search_off : Icons.library_music_outlined,
+          size: 48, color: tints.textDim),
       const SizedBox(height: 16),
-      Text(isSearch ? 'No matches' : 'No tracks indexed', style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 14)),
+      Text(isSearch ? 'No matches' : 'No tracks indexed',
+          style: GoogleFonts.newsreader(color: tints.textMute, fontSize: 20, fontStyle: FontStyle.italic)),
       const SizedBox(height: 8),
-      if (!isSearch) Text(isMobile ? 'Add folders from the PC app first' : 'Add a folder above to scan your music', style: const TextStyle(color: ShamlssColors.divider, fontSize: 12)),
+      if (!isSearch)
+        Text(
+          isMobile ? 'Add folders from the PC app first' : 'Add a folder above to scan your music',
+          style: GoogleFonts.interTight(color: tints.textDim, fontSize: 12),
+        ),
     ]));
   }
 }
+
+// ─── Artist view ──────────────────────────────────────────────────────────
 
 class _ArtistView extends StatefulWidget {
   final List<Map<String, dynamic>> tracks;
   final DaemonClient daemon;
   final ShamlssPlayer player;
-  const _ArtistView({required this.tracks, required this.daemon, required this.player});
+  final SleeveTints tints;
+  const _ArtistView({required this.tracks, required this.daemon, required this.player, required this.tints});
 
   @override
   State<_ArtistView> createState() => _ArtistViewState();
@@ -518,13 +774,13 @@ class _ArtistViewState extends State<_ArtistView> {
 
   @override
   Widget build(BuildContext context) {
-    // Group by artist
     final Map<String, List<Map<String, dynamic>>> byArtist = {};
     for (final t in widget.tracks) {
       final a = t['artist'] as String? ?? 'Unknown Artist';
       (byArtist[a] ??= []).add(t);
     }
     final artists = byArtist.keys.toList()..sort();
+    final tints = widget.tints;
 
     return ListView.builder(
       itemCount: artists.length,
@@ -534,88 +790,171 @@ class _ArtistViewState extends State<_ArtistView> {
         final expanded = _expanded.contains(artist);
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(
-            onTap: () => setState(() { expanded ? _expanded.remove(artist) : _expanded.add(artist); }),
+            onTap: () => setState(() {
+              expanded ? _expanded.remove(artist) : _expanded.add(artist);
+            }),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(children: [
-                const Icon(Icons.person, color: ShamlssColors.amberDim, size: 16),
+                Icon(Icons.person, color: tints.textDim, size: 16),
                 const SizedBox(width: 12),
-                Expanded(child: Text(artist, style: const TextStyle(color: ShamlssColors.text, fontSize: 13))),
-                Text('${artistTracks.length}', style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 11)),
+                Expanded(child: Text(artist,
+                    style: GoogleFonts.newsreader(color: tints.text, fontSize: 16,
+                        fontWeight: FontWeight.w600))),
+                Text('${artistTracks.length}',
+                    style: GoogleFonts.jetBrainsMono(color: tints.textDim, fontSize: 11)),
                 const SizedBox(width: 8),
-                Icon(expanded ? Icons.expand_less : Icons.expand_more, color: ShamlssColors.divider, size: 16),
+                Icon(expanded ? Icons.expand_less : Icons.expand_more, color: tints.textDim, size: 16),
               ]),
             ),
           ),
-          if (expanded) ...artistTracks.asMap().entries.map((e) {
-            final idx = e.key;
-            final t = e.value;
-            return ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.only(left: 44, right: 16),
-              leading: const Icon(Icons.music_note, color: ShamlssColors.amberDim, size: 14),
-              title: Text(t['title'] ?? 'Unknown', style: const TextStyle(color: ShamlssColors.text, fontSize: 12), overflow: TextOverflow.ellipsis),
-              subtitle: Text(t['album'] ?? '', style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 10), overflow: TextOverflow.ellipsis),
-              onTap: () => widget.player.playQueue(artistTracks, idx, widget.daemon.streamUrl, artUrlBuilder: widget.daemon.artUrl),
-            );
-          }),
-          const Divider(height: 1),
+          if (expanded)
+            ...artistTracks.asMap().entries.map((e) {
+              final idx = e.key;
+              final t = e.value;
+              return ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.only(left: 44, right: 16),
+                leading: Icon(Icons.music_note, color: tints.textDim, size: 14),
+                title: Text(t['title'] ?? 'Unknown',
+                    style: GoogleFonts.interTight(color: tints.text, fontSize: 12),
+                    overflow: TextOverflow.ellipsis),
+                subtitle: Text(t['album'] ?? '',
+                    style: GoogleFonts.interTight(color: tints.textMute, fontSize: 10),
+                    overflow: TextOverflow.ellipsis),
+                onTap: () => widget.player.playQueue(
+                    artistTracks, idx, widget.daemon.streamUrl,
+                    artUrlBuilder: widget.daemon.artUrl),
+              );
+            }),
+          Divider(height: 1, color: tints.line),
         ]);
       },
     );
   }
 }
 
-class _AlbumView extends StatelessWidget {
+// ─── Album grid (2-col, Newsreader title, no radius) ──────────────────────
+
+class _AlbumGrid extends StatelessWidget {
   final List<Map<String, dynamic>> tracks;
   final DaemonClient daemon;
   final ShamlssPlayer player;
-  const _AlbumView({required this.tracks, required this.daemon, required this.player});
+  final SleeveTints tints;
+  const _AlbumGrid({required this.tracks, required this.daemon, required this.player, required this.tints});
 
   @override
   Widget build(BuildContext context) {
+    // Group by album
     final Map<String, List<Map<String, dynamic>>> byAlbum = {};
     for (final t in tracks) {
       final a = t['album'] as String? ?? 'Unknown Album';
       (byAlbum[a] ??= []).add(t);
     }
-    final albums = byAlbum.keys.toList()..sort();
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.85,
-      ),
-      itemCount: albums.length,
-      itemBuilder: (_, i) {
-        final album = albums[i];
-        final albumTracks = byAlbum[album]!;
-        final firstWithArt = albumTracks.firstWhere((t) => t['art_hash'] != null, orElse: () => albumTracks.first);
-        final hasArt = firstWithArt['art_hash'] != null;
+    // Group albums by decade
+    final Map<String, List<String>> byDecade = {};
+    for (final album in byAlbum.keys) {
+      final albumTracks = byAlbum[album]!;
+      final year = albumTracks.first['year'] as int?;
+      final decade = year != null ? '${(year ~/ 10) * 10}s' : 'Unknown Era';
+      (byDecade[decade] ??= []).add(album);
+    }
+    final decades = byDecade.keys.toList()..sort((a, b) {
+      // Sort "Unknown Era" to end
+      if (a == 'Unknown Era') return 1;
+      if (b == 'Unknown Era') return -1;
+      return b.compareTo(a); // newest decade first
+    });
 
-        return GestureDetector(
-          onTap: () {
-            player.playQueue(albumTracks, 0, daemon.streamUrl, artUrlBuilder: daemon.artUrl);
-          },
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(color: ShamlssColors.surface, border: Border.all(color: ShamlssColors.divider), borderRadius: BorderRadius.circular(8)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(7),
-                  child: hasArt
-                      ? Image.network(daemon.artUrl(firstWithArt['id'] as String), fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.album, color: ShamlssColors.amberDim, size: 40))
-                      : const Icon(Icons.album, color: ShamlssColors.amberDim, size: 40),
-                ),
+    final tints2 = tints;
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 16),
+      itemCount: decades.length,
+      itemBuilder: (_, di) {
+        final decade = decades[di];
+        final decadeAlbums = byDecade[decade]!..sort();
+
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Decade heading — italic Newsreader
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Text(
+              decade,
+              style: GoogleFonts.newsreader(
+                color: tints2.textMute,
+                fontSize: 18,
+                fontStyle: FontStyle.italic,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(album, style: const TextStyle(color: ShamlssColors.text, fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 1),
-            Text('${albumTracks.length} tracks', style: const TextStyle(color: ShamlssColors.textMuted, fontSize: 10)),
-          ]),
-        );
+          ),
+
+          // 2-col album grid for this decade
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.82,
+            ),
+            itemCount: decadeAlbums.length,
+            itemBuilder: (_, i) {
+              final album = decadeAlbums[i];
+              final albumTracks = byAlbum[album]!;
+              final firstWithArt = albumTracks.firstWhere(
+                  (t) => t['art_hash'] != null, orElse: () => albumTracks.first);
+              final hasArt = firstWithArt['art_hash'] != null;
+
+              return GestureDetector(
+                onTap: () => player.playQueue(albumTracks, 0, daemon.streamUrl,
+                    artUrlBuilder: daemon.artUrl),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // Square sleeve art — no radius (sharp)
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      color: tints2.surface,
+                      child: hasArt
+                          ? Image.network(
+                              daemon.artUrl(firstWithArt['id'] as String),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  Icon(Icons.album, color: tints2.accent, size: 40))
+                          : Icon(Icons.album, color: tints2.accent, size: 40),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Newsreader title
+                  Text(
+                    album,
+                    style: GoogleFonts.newsreader(
+                      color: tints2.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  // Italic muted artist
+                  Text(
+                    albumTracks.first['artist'] as String? ?? '',
+                    style: GoogleFonts.interTight(
+                      color: tints2.textMute,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ]),
+              );
+            },
+          ),
+        ]);
       },
     );
   }

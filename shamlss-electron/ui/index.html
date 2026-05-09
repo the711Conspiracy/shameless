@@ -3,142 +3,1577 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:7432; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:7432; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src http://127.0.0.1:7432 data:">
   <title>Shamlss</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ── Design tokens ── */
+    :root {
+      --ink:        #1A1612;
+      --paper:      #F4F1EA;
+      --rust:       #C96442;
+      --online:     #3FCB6A;
+      --warn:       #E8A020;
+      --error:      #E84A30;
+      --black:      #0A0908;
+
+      /* adaptive tints (updated by JS) */
+      --base:       #1A1612;
+      --surface:    #221E19;
+      --surface-hi: #2E2820;
+      --line:       rgba(244,241,234,0.18);
+      --text:       #F4F1EA;
+      --text-mute:  rgba(244,241,234,0.60);
+      --text-dim:   rgba(244,241,234,0.32);
+      --accent:     #C96442;
+      --accent-soft:rgba(201,100,66,0.28);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #0a0f1e;
-      color: #e8e8e8;
-      font-family: 'Courier New', Courier, monospace;
+      background: var(--ink);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
+      overflow: hidden;
       user-select: none;
     }
-    .wordmark { font-size: 11px; letter-spacing: 0.4em; color: #6b7280; text-transform: uppercase; margin-bottom: 16px; }
-    h1 { font-size: 40px; font-weight: 700; color: #f8f8f8; letter-spacing: -0.02em; margin-bottom: 32px; }
-    .accent { color: #f59e0b; }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-      width: 340px;
+
+    /* ── Mono / serif helpers ── */
+    .mono  { font-family: 'Courier New', Courier, monospace; }
+    .serif { font-family: Georgia, 'Times New Roman', serif; }
+
+    /* ── Top bar ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      height: 54px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      z-index: 10;
     }
-    .stat {
-      background: #111827;
-      border: 1px solid #1e293b;
-      border-radius: 4px;
-      padding: 12px 16px;
-      text-align: center;
+    #wordmark {
+      font-family: Georgia, serif;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--paper);
+      flex-shrink: 0;
     }
-    .stat-val { font-size: 22px; font-weight: 700; color: #f59e0b; }
-    .stat-label { font-size: 10px; color: #4b5563; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
-    .now-playing {
-      width: 340px;
-      background: #111827;
-      border: 1px solid #1e293b;
-      border-radius: 4px;
-      padding: 10px 16px;
+    #wordmark span { color: var(--rust); }
+
+    #nav {
+      display: flex;
+      gap: 2px;
+      flex: 1;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
       font-size: 11px;
-      color: #6b7280;
-      letter-spacing: 0.04em;
-      min-height: 38px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      border-radius: 0;
+      transition: color 0.15s;
+      text-transform: uppercase;
+      position: relative;
+    }
+    .nav-btn:hover { color: var(--text-mute); }
+    .nav-btn.active {
+      color: var(--accent);
+      font-style: italic;
+      font-family: Georgia, serif;
+      font-size: 13px;
+    }
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 14px;
+      right: 14px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    /* Search pill */
+    #search-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    #search {
+      background: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      padding: 5px 14px 5px 32px;
+      width: 200px;
+      outline: none;
+      transition: border-color 0.15s, width 0.2s;
+    }
+    #search:focus { border-color: var(--accent); width: 260px; }
+    #search::placeholder { color: var(--text-dim); }
+    #search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    /* Status dot */
+    #status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #status-dot.online { background: var(--online); }
+    #status-dot.playing { background: var(--accent); animation: blink 1.8s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ── Main layout: 2-column ── */
+    #main {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      height: calc(100vh - 54px);
+      overflow: hidden;
+    }
+
+    /* ── Left: editorial content ── */
+    #left {
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 32px 32px 48px 32px;
+      position: relative;
+    }
+    #left::-webkit-scrollbar { width: 4px; }
+    #left::-webkit-scrollbar-track { background: transparent; }
+    #left::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+    /* Paper grain on left panel */
+    #left::before {
+      content: '';
+      position: fixed;
+      top: 54px;
+      left: 0;
+      width: calc(100% - 360px);
+      bottom: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    /* ─ Hero banner 21:9 ─ */
+    #hero {
+      width: 100%;
+      aspect-ratio: 21/9;
+      background: var(--surface-hi);
+      border: 1px solid var(--line);
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+    }
+    #hero-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.55;
+    }
+    #hero-overlay {
+      position: relative;
+      z-index: 1;
+      padding: 24px 28px;
+      width: 100%;
+      background: linear-gradient(to top, rgba(10,9,8,0.9) 0%, transparent 100%);
+    }
+    #hero-eyebrow {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    #hero-title {
+      font-family: Georgia, serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--paper);
+      letter-spacing: -0.01em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #hero-sub {
+      font-size: 12px;
+      color: var(--text-mute);
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    /* ─ Section headings ─ */
+    .section-heading {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    /* ─ 6-col track grid ─ */
+    .track-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .grid-card {
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .grid-card:hover { opacity: 0.8; }
+    .grid-card-art {
+      width: 100%;
+      aspect-ratio: 1;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      position: relative;
+    }
+    .grid-card-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .grid-card-art .art-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      color: var(--text-dim);
+      font-size: 24px;
+    }
+    .grid-card-title {
+      margin-top: 6px;
+      font-family: Georgia, serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .grid-card-artist {
+      font-size: 10px;
+      color: var(--text-mute);
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .grid-card.active .grid-card-title { color: var(--accent); }
+
+    /* ─ Deep Cuts track table ─ */
+    #deep-cuts { margin-bottom: 40px; }
+    .track-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .track-table th {
+      text-align: left;
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .track-table td {
+      padding: 7px 8px;
+      font-size: 12px;
+      color: var(--text-mute);
+      border-bottom: 1px solid rgba(244,241,234,0.06);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 0;
+      cursor: pointer;
+    }
+    .track-table tr:hover td { background: var(--surface); color: var(--text); }
+    .track-table tr.active td { color: var(--accent); }
+    .track-table td.track-title {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .track-table tr:hover td.track-title,
+    .track-table tr.active td.track-title { color: var(--accent); }
+    .track-table td.track-mono {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Right: Now Playing column ── */
+    #right {
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    #right::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    #right-inner {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    #right-inner::-webkit-scrollbar { width: 3px; }
+    #right-inner::-webkit-scrollbar-thumb { background: var(--line); }
+
+    /* VinylDisc wrapper */
+    #vinyl-wrap {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 0 auto 24px;
+    }
+    /* Sleeve peek to the left */
+    #sleeve-peek {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: calc(280px * 0.36 + 280px * 0.18);
+      overflow: hidden;
+    }
+    #sleeve-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #sleeve-placeholder {
+      width: 100%;
+      height: 100%;
+      background: var(--surface-hi);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 36px;
+    }
+    /* The rotating disc */
+    #vinyl-disc-wrap {
+      position: absolute;
+      left: calc(280px * 0.36);
+      top: 0;
+      width: 280px;
+      height: 280px;
+    }
+    #vinyl-canvas {
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    /* Track info */
+    #np-title {
+      font-family: Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    #np-artist {
+      font-size: 13px;
+      font-style: italic;
+      color: var(--text-mute);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #mono-strip {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* Progress bar (2px) */
+    #progress-wrap {
+      margin-bottom: 6px;
+      position: relative;
+      height: 2px;
+      background: var(--line);
+      border-radius: 1px;
+      cursor: pointer;
+    }
+    #progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 1px;
+      width: 0%;
+      transition: width 0.25s linear;
+    }
+    #time-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    /* Transport */
+    #transport {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .tb {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      line-height: 1;
+      border-radius: 50%;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .tb:hover { opacity: 0.7; }
+    .tb-prev, .tb-next {
+      width: 44px;
+      height: 44px;
+      font-size: 22px;
+    }
+    #play-btn {
+      width: 64px;
+      height: 64px;
+      background: var(--rust);
+      border-radius: 50%;
+      font-size: 28px;
+      color: var(--paper);
+      flex-shrink: 0;
+    }
+    #play-btn:hover { opacity: 0.88; }
+
+    /* Mode row (shuffle/repeat) */
+    #mode-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .mode-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      transition: all 0.15s;
+    }
+    .mode-btn.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Links row */
+    #links-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .link-chip {
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border: 1px solid var(--line);
+      padding: 3px 10px;
+      cursor: pointer;
+      border-radius: 0;
+      background: none;
+      transition: all 0.15s;
+    }
+    .link-chip:hover { color: var(--text-mute); border-color: var(--text-dim); }
+    .link-chip.active { color: var(--accent); border-color: var(--accent); }
+
+    /* Pod members (at bottom of right panel) */
+    #pod-section {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      margin-top: auto;
+    }
+    #pod-label {
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .pod-member {
       display: flex;
       align-items: center;
       gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(244,241,234,0.06);
     }
-    .dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: #f59e0b; flex-shrink: 0;
-      animation: pulse 2s ease-in-out infinite;
+    .pod-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
     }
-    .dot.idle { background: #374151; animation: none; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .np-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #9ca3af; }
-    .status-row {
-      margin-top: 14px; font-size: 10px; color: #374151;
-      letter-spacing: 0.1em; text-transform: uppercase;
+    .pod-dot.online { background: var(--online); }
+    .pod-member-name {
+      font-size: 12px;
+      color: var(--text-mute);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .top-artists {
-      width: 340px; margin-top: 16px;
+    .pod-member-track {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 120px;
     }
-    .top-label { font-size: 10px; color: #374151; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
-    .artist-row {
-      display: flex; justify-content: space-between;
-      font-size: 11px; color: #6b7280; padding: 3px 0;
-      border-bottom: 1px solid #111827;
+
+    /* ── Volume / misc ── */
+    #vol-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .artist-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
-    .artist-plays { color: #f59e0b; }
+    #vol-row label {
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    #vol {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* ── Active nav view panels ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Loading / empty states ── */
+    .empty-state {
+      text-align: center;
+      color: var(--text-dim);
+      font-style: italic;
+      font-family: Georgia, serif;
+      font-size: 16px;
+      padding: 48px 16px;
+    }
+
+    /* ── Queue panel ── */
+    #queue-list .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(244,241,234,0.06);
+      cursor: pointer;
+    }
+    #queue-list .queue-item:hover { background: rgba(244,241,234,0.04); }
+    #queue-list .qi-num {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      width: 20px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+    #queue-list .qi-title { font-size: 12px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #queue-list .qi-artist { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+    #queue-list .queue-item.active .qi-title { color: var(--accent); }
   </style>
 </head>
 <body>
-  <div class="wordmark">Self Hosted Audio Music Library Streaming Service</div>
-  <h1>Shaml<span class="accent">ss</span></h1>
 
-  <div class="stats-grid">
-    <div class="stat"><div class="stat-val" id="tracks">—</div><div class="stat-label">Tracks</div></div>
-    <div class="stat"><div class="stat-val" id="artists">—</div><div class="stat-label">Artists</div></div>
-    <div class="stat"><div class="stat-val" id="albums">—</div><div class="stat-label">Albums</div></div>
+<!-- ── Top bar ── -->
+<div id="topbar">
+  <div id="wordmark">Shaml<span>ss</span></div>
+
+  <nav id="nav">
+    <button class="nav-btn active" data-view="home" onclick="switchView('home', this)">Home</button>
+    <button class="nav-btn" data-view="library" onclick="switchView('library', this)">Library</button>
+    <button class="nav-btn" data-view="queue" onclick="switchView('queue', this)">Queue</button>
+    <button class="nav-btn" data-view="history" onclick="switchView('history', this)">History</button>
+  </nav>
+
+  <div id="search-wrap">
+    <span id="search-icon">⌕</span>
+    <input id="search" type="text" placeholder="Search…" oninput="onSearch(this.value)">
   </div>
 
-  <div class="now-playing">
-    <div class="dot idle" id="dot"></div>
-    <div class="np-text" id="np">Nothing playing recently</div>
-  </div>
+  <div id="status-dot" title="Disconnected"></div>
+</div>
 
-  <div class="top-artists" id="top-artists-section" style="display:none">
-    <div class="top-label">Top artists this week</div>
-    <div id="top-artists-list"></div>
-  </div>
+<!-- ── Main 2-col layout ── -->
+<div id="main">
 
-  <div class="status-row">daemon :7432 &nbsp;·&nbsp; <span id="node-id">—</span></div>
+  <!-- LEFT: editorial content -->
+  <div id="left">
 
-  <script>
-    const BASE = 'http://127.0.0.1:7432'
+    <!-- Home view -->
+    <div id="view-home" class="view active">
+      <!-- Hero banner -->
+      <div id="hero">
+        <img id="hero-img" src="" alt="" style="display:none">
+        <div id="hero-overlay">
+          <div id="hero-eyebrow">RECENTLY PLAYED</div>
+          <div id="hero-title">Nothing playing yet</div>
+          <div id="hero-sub" style="display:none"></div>
+        </div>
+      </div>
 
-    async function refresh() {
-      try {
-        const [ping, stats] = await Promise.all([
-          fetch(BASE + '/ping').then(r => r.json()),
-          fetch(BASE + '/stats').then(r => r.json())
-        ])
+      <!-- Side A: recently played -->
+      <div id="side-a">
+        <div class="section-heading">SIDE A &nbsp;──&nbsp; RECENTLY PLAYED</div>
+        <div class="track-grid" id="recent-grid">
+          <div class="empty-state" style="grid-column:1/-1">Loading…</div>
+        </div>
+      </div>
 
-        document.getElementById('node-id').textContent = (ping.node_id || '').slice(0, 8) + '…'
-        document.getElementById('tracks').textContent = stats.trackCount ?? '—'
-        document.getElementById('artists').textContent = stats.artistCount ?? '—'
-        document.getElementById('albums').textContent = stats.albumCount ?? '—'
+      <!-- Side B: new in library -->
+      <div id="side-b">
+        <div class="section-heading">SIDE B &nbsp;──&nbsp; NEW IN LIBRARY</div>
+        <div class="track-grid" id="new-grid">
+          <div class="empty-state" style="grid-column:1/-1">Loading…</div>
+        </div>
+      </div>
 
-        const np = stats.recentPlay
-        if (np) {
-          document.getElementById('dot').className = 'dot'
-          document.getElementById('np').textContent = (np.artist ? np.artist + ' — ' : '') + (np.title || '')
-        } else {
-          document.getElementById('dot').className = 'dot idle'
-          document.getElementById('np').textContent = 'Nothing playing recently'
-        }
+      <!-- Deep Cuts: all tracks table -->
+      <div id="deep-cuts">
+        <div class="section-heading">DEEP CUTS &nbsp;──&nbsp; FULL COLLECTION</div>
+        <table class="track-table" id="track-table">
+          <thead>
+            <tr>
+              <th style="width:28px">#</th>
+              <th style="width:40%">TITLE</th>
+              <th style="width:20%">ARTIST</th>
+              <th style="width:16%">ALBUM</th>
+              <th style="width:60px">FORMAT</th>
+              <th style="width:48px">TIME</th>
+            </tr>
+          </thead>
+          <tbody id="track-tbody">
+            <tr><td colspan="6" class="empty-state">Loading library…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /view-home -->
 
-        const top = stats.topArtists || []
-        if (top.length > 0) {
-          document.getElementById('top-artists-section').style.display = ''
-          document.getElementById('top-artists-list').innerHTML = top.map(a =>
-            `<div class="artist-row"><span class="artist-name">${esc(a.artist)}</span><span class="artist-plays">${a.plays}</span></div>`
-          ).join('')
-        }
-      } catch {}
+    <!-- Library view -->
+    <div id="view-library" class="view">
+      <div style="margin-bottom:24px">
+        <div style="font-family:'Courier New',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.18em;margin-bottom:6px">──── COLLECTION</div>
+        <div style="font-family:Georgia,serif;font-size:36px;font-weight:600;color:var(--text);letter-spacing:-0.01em">The Library</div>
+        <div id="lib-subtitle" style="font-size:13px;font-style:italic;color:var(--text-mute);margin-top:4px">Loading…</div>
+      </div>
+
+      <!-- Filter chips -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap" id="lib-filters">
+        <button class="link-chip active" onclick="setLibFilter('all',this)">ALL</button>
+        <button class="link-chip" onclick="setLibFilter('artist',this)">ARTISTS</button>
+        <button class="link-chip" onclick="setLibFilter('album',this)">ALBUMS</button>
+        <button class="link-chip" onclick="setLibFilter('podcast',this)">PODCASTS</button>
+      </div>
+
+      <!-- Album 2-col grid -->
+      <div id="lib-album-grid" style="
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+        gap:16px;
+      "></div>
+
+      <!-- Track list fallback -->
+      <div id="lib-track-list" style="display:none"></div>
+    </div><!-- /view-library -->
+
+    <!-- Queue view -->
+    <div id="view-queue" class="view">
+      <div style="font-family:Georgia,serif;font-size:28px;font-weight:600;color:var(--text);margin-bottom:20px">Queue</div>
+      <div id="queue-list"></div>
+    </div>
+
+    <!-- History view -->
+    <div id="view-history" class="view">
+      <div style="font-family:Georgia,serif;font-size:28px;font-weight:600;color:var(--text);margin-bottom:20px">History</div>
+      <table class="track-table" id="history-table">
+        <thead><tr>
+          <th style="width:40%">TITLE</th>
+          <th style="width:22%">ARTIST</th>
+          <th style="width:18%">ALBUM</th>
+          <th style="width:80px">PLAYED</th>
+        </tr></thead>
+        <tbody id="history-tbody">
+          <tr><td colspan="4" class="empty-state">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- RIGHT: Now Playing panel -->
+  <div id="right">
+    <div id="right-inner">
+
+      <!-- VinylDisc hero (280px) -->
+      <div id="vinyl-wrap">
+        <div id="sleeve-peek">
+          <img id="sleeve-img" src="" alt="" style="display:none">
+          <div id="sleeve-placeholder">♫</div>
+        </div>
+        <div id="vinyl-disc-wrap">
+          <canvas id="vinyl-canvas" width="280" height="280"></canvas>
+        </div>
+      </div>
+
+      <!-- Track info -->
+      <div id="np-title">Nothing playing</div>
+      <div id="np-artist"></div>
+      <div id="mono-strip"></div>
+
+      <!-- Progress bar -->
+      <div id="progress-wrap" onclick="seekTo(event)">
+        <div id="progress-fill"></div>
+      </div>
+      <div id="time-row">
+        <span id="time-pos">--:--</span>
+        <span id="time-dur">--:--</span>
+      </div>
+
+      <!-- Volume -->
+      <div id="vol-row">
+        <label>VOL</label>
+        <input id="vol" type="range" min="0" max="100" value="80" oninput="setVolume(this.value)">
+      </div>
+
+      <!-- Transport -->
+      <div id="transport">
+        <button class="tb tb-prev" onclick="playPrev()" title="Previous">◀◀</button>
+        <button class="tb" id="play-btn" onclick="togglePlay()" title="Play/Pause">▶</button>
+        <button class="tb tb-next" onclick="playNext()" title="Next">▶▶</button>
+      </div>
+
+      <!-- Mode row -->
+      <div id="mode-row">
+        <button class="mode-btn" id="btn-shuffle" onclick="toggleShuffle()">SHUFFLE</button>
+        <button class="mode-btn" id="btn-repeat" onclick="cycleRepeat()">REPEAT</button>
+      </div>
+
+      <!-- Links row -->
+      <div id="links-row">
+        <button class="link-chip" id="lc-lyrics" onclick="togglePanel('lyrics')">LYRICS</button>
+        <button class="link-chip" id="lc-similar" onclick="togglePanel('similar')">SIMILAR</button>
+        <button class="link-chip" id="lc-queue" onclick="switchView('queue',null)">QUEUE</button>
+      </div>
+
+      <!-- Extra panel content (lyrics / similar) -->
+      <div id="extra-panel" style="display:none;margin-bottom:16px"></div>
+
+      <!-- Pod section -->
+      <div id="pod-section" style="display:none">
+        <div id="pod-label">POD MEMBERS</div>
+        <div id="pod-members"></div>
+      </div>
+
+    </div><!-- /right-inner -->
+  </div><!-- /right -->
+
+</div><!-- /main -->
+
+<!-- Hidden audio element -->
+<audio id="audio" preload="none"></audio>
+
+<script>
+'use strict'
+
+const BASE = 'http://127.0.0.1:7432'
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  tracks: [],
+  history: [],
+  queue: [],
+  queueIndex: -1,
+  playing: false,
+  shuffle: false,
+  repeat: 'none', // 'none' | 'all' | 'one'
+  currentTrack: null,
+  activePanel: null,
+  stats: null,
+  libFilter: 'all',
+  searchQuery: '',
+}
+
+const audio = document.getElementById('audio')
+
+// ── Utility ────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function fmtDur(secs) {
+  if (!secs || isNaN(secs)) return '--:--'
+  const m = Math.floor(secs / 60)
+  const s = Math.floor(secs % 60)
+  return `${m}:${s.toString().padStart(2,'0')}`
+}
+
+function artUrl(id) {
+  return `${BASE}/library/tracks/${id}/art`
+}
+
+function streamUrl(id) {
+  return `${BASE}/stream/${id}`
+}
+
+// ── API helpers ────────────────────────────────────────────────────────────
+async function apiFetch(path, opts) {
+  try {
+    const r = await fetch(BASE + path, opts)
+    if (!r.ok) return null
+    return r.json()
+  } catch { return null }
+}
+
+// ── Initial load ───────────────────────────────────────────────────────────
+async function loadAll() {
+  const [tracks, history, stats] = await Promise.all([
+    apiFetch('/library/tracks'),
+    apiFetch('/history?limit=50'),
+    apiFetch('/stats'),
+  ])
+
+  if (tracks) {
+    state.tracks = Array.isArray(tracks) ? tracks : (tracks.tracks || [])
+    renderTrackTable()
+    renderNewGrid()
+    renderLibraryView()
+  }
+
+  if (history) {
+    state.history = Array.isArray(history) ? history : (history.history || [])
+    renderRecentGrid()
+    renderHistoryTable()
+  }
+
+  if (stats) {
+    state.stats = stats
+    updateStatusDot(true, false)
+    document.getElementById('status-dot').title = `${stats.trackCount ?? 0} tracks`
+    document.getElementById('lib-subtitle').textContent =
+      `${stats.trackCount ?? state.tracks.length} tracks · ${stats.artistCount ?? 0} artists · ${stats.albumCount ?? 0} albums`
+  } else {
+    updateStatusDot(false, false)
+  }
+
+  // Start queue from full library
+  if (state.queue.length === 0 && state.tracks.length > 0) {
+    state.queue = [...state.tracks]
+  }
+}
+
+// ── Status dot ────────────────────────────────────────────────────────────
+function updateStatusDot(connected, playing) {
+  const dot = document.getElementById('status-dot')
+  dot.className = 'status-dot'
+  if (!connected) { dot.style.background = 'var(--text-dim)'; return }
+  if (playing) {
+    dot.className = 'status-dot playing'
+    dot.style.background = 'var(--accent)'
+  } else {
+    dot.style.background = 'var(--online)'
+  }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
+  const el = document.getElementById('view-' + name)
+  if (el) el.classList.add('active')
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
+  if (btn) btn.classList.add('active')
+  else {
+    const nb = document.querySelector(`.nav-btn[data-view="${name}"]`)
+    if (nb) nb.classList.add('active')
+  }
+
+  if (name === 'queue') renderQueueView()
+}
+
+// ── Vinyl disc canvas ──────────────────────────────────────────────────────
+let discAngle = 0
+let discAccentColor = '#C96442'
+let discAnimFrame = null
+let discSpinning = false
+
+function initVinyl() {
+  renderDisc()
+}
+
+function renderDisc() {
+  const canvas = document.getElementById('vinyl-canvas')
+  const ctx = canvas.getContext('2d')
+  const r = 140
+  const cx = 140, cy = 140
+
+  ctx.clearRect(0, 0, 280, 280)
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.rotate(discAngle)
+
+  // Black disc body
+  ctx.beginPath()
+  ctx.arc(0, 0, r, 0, Math.PI * 2)
+  ctx.fillStyle = '#0A0908'
+  ctx.fill()
+
+  // Groove rings (~3% opacity white)
+  const grooveRadii = [0.97, 0.92, 0.86, 0.78, 0.68, 0.58, 0.48]
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)'
+  ctx.lineWidth = 0.8
+  for (const f of grooveRadii) {
+    ctx.beginPath()
+    ctx.arc(0, 0, r * f, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  // Center label (32% of diameter)
+  const labelR = r * 0.32
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, labelR)
+  grad.addColorStop(0, discAccentColor)
+  grad.addColorStop(1, blendToBlack(discAccentColor, 0.5))
+  ctx.beginPath()
+  ctx.arc(0, 0, labelR, 0, Math.PI * 2)
+  ctx.fillStyle = grad
+  ctx.fill()
+
+  // "SHAMLSS" label text
+  ctx.save()
+  ctx.rotate(-discAngle) // counter-rotate so text stays upright
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.font = `600 ${Math.round(labelR * 0.22)}px 'Courier New', monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.letterSpacing = `${Math.round(labelR * 0.04)}px`
+  ctx.fillText('SHAMLSS', 0, 0)
+  ctx.restore()
+
+  // Center hole
+  ctx.beginPath()
+  ctx.arc(0, 0, r * 0.018, 0, Math.PI * 2)
+  ctx.fillStyle = '#0A0908'
+  ctx.fill()
+
+  ctx.restore()
+}
+
+function blendToBlack(hex, t) {
+  // Blend hex color toward #000 by factor t
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  const nr = Math.round(r * (1 - t))
+  const ng = Math.round(g * (1 - t))
+  const nb = Math.round(b * (1 - t))
+  return `rgb(${nr},${ng},${nb})`
+}
+
+function startSpin() {
+  if (discSpinning) return
+  discSpinning = true
+  const step = () => {
+    discAngle += (2 * Math.PI) / (1818 / 16.67) // 1 rev / 1818ms at ~60fps
+    if (discAngle >= 2 * Math.PI) discAngle -= 2 * Math.PI
+    renderDisc()
+    if (discSpinning) discAnimFrame = requestAnimationFrame(step)
+  }
+  discAnimFrame = requestAnimationFrame(step)
+}
+
+function stopSpin() {
+  discSpinning = false
+  if (discAnimFrame) cancelAnimationFrame(discAnimFrame)
+}
+
+// ── Playback ───────────────────────────────────────────────────────────────
+function playTrack(track, queueIdx) {
+  state.currentTrack = track
+  if (typeof queueIdx === 'number') state.queueIndex = queueIdx
+
+  const url = streamUrl(track.id)
+  audio.src = url
+  audio.play().catch(() => {})
+  state.playing = true
+  document.getElementById('play-btn').textContent = '⏸'
+
+  updateNowPlayingPanel(track)
+  updateSleeveArt(track)
+  updateStatusDot(true, true)
+  startSpin()
+
+  // Update hero
+  updateHero(track)
+}
+
+function updateNowPlayingPanel(track) {
+  document.getElementById('np-title').textContent = track.title ?? 'Unknown'
+  document.getElementById('np-artist').textContent = track.artist ?? ''
+
+  // MonoStrip
+  const parts = []
+  if (track.bpm)    parts.push(`${Math.round(track.bpm)} BPM`)
+  if (track.key)    parts.push(track.key.toUpperCase())
+  if (track.format) parts.push(track.format.toUpperCase())
+  document.getElementById('mono-strip').textContent = parts.join(' · ')
+
+  // Highlight active in track table
+  document.querySelectorAll('#track-tbody tr').forEach(tr => {
+    tr.classList.toggle('active', tr.dataset.id === track.id)
+  })
+}
+
+function updateSleeveArt(track) {
+  const img = document.getElementById('sleeve-img')
+  const ph  = document.getElementById('sleeve-placeholder')
+  if (track.art_hash) {
+    img.src = artUrl(track.id)
+    img.style.display = 'block'
+    ph.style.display  = 'none'
+  } else {
+    img.style.display = 'none'
+    ph.style.display  = 'flex'
+  }
+}
+
+function updateHero(track) {
+  const heroImg = document.getElementById('hero-img')
+  const heroTitle = document.getElementById('hero-title')
+  const heroSub   = document.getElementById('hero-sub')
+  const heroEye   = document.getElementById('hero-eyebrow')
+
+  heroTitle.textContent = track.title ?? 'Unknown'
+  if (track.artist || track.album) {
+    heroSub.textContent = [track.artist, track.album].filter(Boolean).join(' — ')
+    heroSub.style.display = ''
+  }
+  heroEye.textContent = 'NOW PLAYING'
+
+  if (track.art_hash) {
+    heroImg.src = artUrl(track.id)
+    heroImg.style.display = 'block'
+  } else {
+    heroImg.style.display = 'none'
+  }
+}
+
+function togglePlay() {
+  if (!state.currentTrack) {
+    // Start from beginning of queue
+    if (state.queue.length > 0) playTrack(state.queue[0], 0)
+    return
+  }
+  if (state.playing) {
+    audio.pause()
+    state.playing = false
+    document.getElementById('play-btn').textContent = '▶'
+    stopSpin()
+    updateStatusDot(true, false)
+  } else {
+    audio.play().catch(() => {})
+    state.playing = true
+    document.getElementById('play-btn').textContent = '⏸'
+    startSpin()
+    updateStatusDot(true, true)
+  }
+}
+
+function playNext() {
+  if (state.queue.length === 0) return
+  let idx = state.queueIndex
+  if (state.shuffle) {
+    idx = Math.floor(Math.random() * state.queue.length)
+  } else {
+    idx = (idx + 1) % state.queue.length
+  }
+  playTrack(state.queue[idx], idx)
+}
+
+function playPrev() {
+  if (state.queue.length === 0) return
+  let idx = (state.queueIndex - 1 + state.queue.length) % state.queue.length
+  playTrack(state.queue[idx], idx)
+}
+
+function toggleShuffle() {
+  state.shuffle = !state.shuffle
+  document.getElementById('btn-shuffle').classList.toggle('active', state.shuffle)
+}
+
+function cycleRepeat() {
+  const modes = ['none', 'all', 'one']
+  state.repeat = modes[(modes.indexOf(state.repeat) + 1) % modes.length]
+  const btn = document.getElementById('btn-repeat')
+  btn.classList.toggle('active', state.repeat !== 'none')
+  btn.textContent = state.repeat === 'one' ? 'REPEAT 1' : 'REPEAT'
+}
+
+function setVolume(v) {
+  audio.volume = v / 100
+}
+
+// Progress
+audio.addEventListener('timeupdate', () => {
+  const dur = audio.duration || 0
+  const pos = audio.currentTime || 0
+  const pct = dur > 0 ? (pos / dur) * 100 : 0
+  document.getElementById('progress-fill').style.width = pct + '%'
+  document.getElementById('time-pos').textContent = fmtDur(pos)
+  document.getElementById('time-dur').textContent = fmtDur(dur)
+})
+
+audio.addEventListener('ended', () => {
+  if (state.repeat === 'one') {
+    audio.currentTime = 0
+    audio.play().catch(() => {})
+  } else {
+    playNext()
+  }
+})
+
+function seekTo(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  const ratio = (e.clientX - rect.left) / rect.width
+  if (audio.duration) audio.currentTime = ratio * audio.duration
+}
+
+// ── Render: track table ────────────────────────────────────────────────────
+function renderTrackTable(tracks) {
+  const list = tracks ?? filterTracks(state.tracks)
+  const tbody = document.getElementById('track-tbody')
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No tracks found</td></tr>'
+    return
+  }
+  tbody.innerHTML = list.map((t, i) => `
+    <tr data-id="${esc(t.id)}" data-idx="${i}" onclick="onTrackClick(this,'${esc(t.id)}')">
+      <td class="track-mono">${i + 1}</td>
+      <td class="track-title" style="max-width:0">${esc(t.title ?? 'Unknown')}</td>
+      <td style="max-width:0">${esc(t.artist ?? '')}</td>
+      <td style="max-width:0">${esc(t.album ?? '')}</td>
+      <td class="track-mono">${esc(t.format?.toUpperCase() ?? '')}</td>
+      <td class="track-mono">${fmtDur(t.duration)}</td>
+    </tr>
+  `).join('')
+}
+
+function onTrackClick(row, id) {
+  const track = state.tracks.find(t => t.id === id)
+  if (!track) return
+  // Set queue to full track list, starting at this track
+  state.queue = [...state.tracks]
+  const idx = state.tracks.indexOf(track)
+  playTrack(track, idx >= 0 ? idx : 0)
+}
+
+// ── Render: recent grid ────────────────────────────────────────────────────
+function renderRecentGrid() {
+  const grid = document.getElementById('recent-grid')
+  const list = state.history.slice(0, 6)
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Nothing played yet</div>'
+    return
+  }
+  grid.innerHTML = list.map(t => gridCardHtml(t)).join('')
+  updateGridActive()
+}
+
+// ── Render: new in library grid ────────────────────────────────────────────
+function renderNewGrid() {
+  const grid = document.getElementById('new-grid')
+  // Take the last 6 tracks added (assuming sorted by id / addition order)
+  const list = [...state.tracks].slice(-6).reverse()
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Library empty</div>'
+    return
+  }
+  grid.innerHTML = list.map(t => gridCardHtml(t)).join('')
+  updateGridActive()
+}
+
+function gridCardHtml(t) {
+  const hasArt = t.art_hash
+  return `<div class="grid-card" data-id="${esc(t.id)}" onclick="onGridClick('${esc(t.id)}')">
+    <div class="grid-card-art">
+      ${hasArt
+        ? `<img src="${esc(artUrl(t.id))}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\"art-placeholder\\">♫</div>'">`
+        : '<div class="art-placeholder">♫</div>'}
+    </div>
+    <div class="grid-card-title">${esc(t.title ?? 'Unknown')}</div>
+    <div class="grid-card-artist">${esc(t.artist ?? '')}</div>
+  </div>`
+}
+
+function onGridClick(id) {
+  const track = state.tracks.find(t => t.id === id)
+      || state.history.find(t => t.id === id)
+  if (!track) return
+  state.queue = [...state.tracks]
+  const idx = state.tracks.findIndex(t => t.id === id)
+  playTrack(track, idx >= 0 ? idx : 0)
+}
+
+function updateGridActive() {
+  const id = state.currentTrack?.id
+  document.querySelectorAll('.grid-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.id === id)
+  })
+}
+
+// ── Render: history table ──────────────────────────────────────────────────
+function renderHistoryTable() {
+  const tbody = document.getElementById('history-tbody')
+  const list = state.history
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No history yet</td></tr>'
+    return
+  }
+  tbody.innerHTML = list.map(t => `
+    <tr onclick="onHistoryClick('${esc(t.id)}')">
+      <td class="track-title" style="max-width:0">${esc(t.title ?? 'Unknown')}</td>
+      <td style="max-width:0">${esc(t.artist ?? '')}</td>
+      <td style="max-width:0">${esc(t.album ?? '')}</td>
+      <td class="track-mono">${t.played_at ? new Date(t.played_at).toLocaleDateString() : ''}</td>
+    </tr>
+  `).join('')
+}
+
+function onHistoryClick(id) {
+  const track = state.tracks.find(t => t.id === id)
+      || state.history.find(t => t.id === id)
+  if (!track) return
+  state.queue = [...state.tracks]
+  const idx = state.tracks.findIndex(t => t.id === id)
+  playTrack(track, idx >= 0 ? idx : 0)
+}
+
+// ── Render: library view ───────────────────────────────────────────────────
+function renderLibraryView() {
+  const filter = state.libFilter
+  const q = state.searchQuery.toLowerCase()
+
+  let tracks = state.tracks
+  if (q) {
+    tracks = tracks.filter(t =>
+      (t.title ?? '').toLowerCase().includes(q) ||
+      (t.artist ?? '').toLowerCase().includes(q) ||
+      (t.album ?? '').toLowerCase().includes(q)
+    )
+  }
+  if (filter === 'podcast') {
+    tracks = tracks.filter(t => t.type === 'podcast' || t.type === 'audiobook')
+  }
+
+  const grid = document.getElementById('lib-album-grid')
+  const trackList = document.getElementById('lib-track-list')
+
+  if (filter === 'all' || filter === 'album') {
+    // Group by album
+    const byAlbum = {}
+    for (const t of tracks) {
+      const a = t.album ?? 'Unknown Album'
+      if (!byAlbum[a]) byAlbum[a] = []
+      byAlbum[a].push(t)
     }
+    const albums = Object.keys(byAlbum).sort()
 
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    grid.style.display = 'grid'
+    trackList.style.display = 'none'
+    grid.innerHTML = albums.map(album => {
+      const albumTracks = byAlbum[album]
+      const first = albumTracks.find(t => t.art_hash) ?? albumTracks[0]
+      return `<div class="grid-card" style="cursor:pointer" onclick="playAlbum('${esc(album)}')">
+        <div class="grid-card-art">
+          ${first.art_hash
+            ? `<img src="${esc(artUrl(first.id))}" alt="" loading="lazy"
+                 onerror="this.parentElement.innerHTML='<div class=\\"art-placeholder\\">♫</div>'">`
+            : '<div class="art-placeholder">♫</div>'}
+        </div>
+        <div class="grid-card-title" style="font-family:Georgia,serif">${esc(album)}</div>
+        <div class="grid-card-artist">${esc(albumTracks[0]?.artist ?? '')}</div>
+      </div>`
+    }).join('') || '<div class="empty-state" style="grid-column:1/-1">No albums found</div>'
+
+  } else if (filter === 'artist') {
+    // Group by artist
+    const byArtist = {}
+    for (const t of tracks) {
+      const a = t.artist ?? 'Unknown Artist'
+      if (!byArtist[a]) byArtist[a] = []
+      byArtist[a].push(t)
     }
+    const artists = Object.keys(byArtist).sort()
 
-    refresh()
-    setInterval(refresh, 5000)
-  </script>
+    grid.style.display = 'none'
+    trackList.style.display = 'block'
+    trackList.innerHTML = `
+      <table class="track-table"><thead><tr>
+        <th style="width:40%">ARTIST</th>
+        <th style="width:60px">TRACKS</th>
+      </tr></thead><tbody>
+      ${artists.map(artist => `
+        <tr onclick="playArtist('${esc(artist)}')" style="cursor:pointer">
+          <td class="track-title">${esc(artist)}</td>
+          <td class="track-mono">${byArtist[artist].length}</td>
+        </tr>
+      `).join('')}
+      </tbody></table>`
+
+  } else if (filter === 'podcast') {
+    grid.style.display = 'none'
+    trackList.style.display = 'block'
+    if (tracks.length === 0) {
+      trackList.innerHTML = '<div class="empty-state">No podcasts or audiobooks found</div>'
+    } else {
+      trackList.innerHTML = tracks.map(t => `
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"
+             onclick="onGridClick('${esc(t.id)}')">
+          <div style="width:40px;height:40px;background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">
+            ${t.art_hash ? `<img src="${esc(artUrl(t.id))}" style="width:40px;height:40px;object-fit:cover">` : '🎙'}
+          </div>
+          <div style="flex:1;overflow:hidden">
+            <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title ?? 'Unknown')}</div>
+            <div style="font-size:11px;color:var(--text-mute);font-family:'Courier New',monospace;letter-spacing:0.1em">${esc(t.type?.toUpperCase() ?? '')}</div>
+          </div>
+        </div>
+      `).join('')
+    }
+  }
+}
+
+function setLibFilter(f, btn) {
+  state.libFilter = f
+  document.querySelectorAll('#lib-filters .link-chip').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  renderLibraryView()
+}
+
+function playAlbum(album) {
+  const tracks = state.tracks.filter(t => (t.album ?? 'Unknown Album') === album)
+  if (tracks.length === 0) return
+  state.queue = tracks
+  playTrack(tracks[0], 0)
+}
+
+function playArtist(artist) {
+  const tracks = state.tracks.filter(t => (t.artist ?? 'Unknown Artist') === artist)
+  if (tracks.length === 0) return
+  state.queue = tracks
+  playTrack(tracks[0], 0)
+}
+
+// ── Queue view ─────────────────────────────────────────────────────────────
+function renderQueueView() {
+  const el = document.getElementById('queue-list')
+  const q = state.queue
+  if (q.length === 0) {
+    el.innerHTML = '<div class="empty-state">Queue is empty</div>'
+    return
+  }
+  el.innerHTML = q.map((t, i) => `
+    <div class="queue-item${i === state.queueIndex ? ' active' : ''}"
+         onclick="playTrack(state.queue[${i}],${i})">
+      <span class="qi-num">${i + 1}</span>
+      <span class="qi-title">${esc(t.title ?? 'Unknown')}</span>
+      <span class="qi-artist">${esc(t.artist ?? '')}</span>
+    </div>
+  `).join('')
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+function filterTracks(tracks) {
+  const q = state.searchQuery.toLowerCase()
+  if (!q) return tracks
+  return tracks.filter(t =>
+    (t.title ?? '').toLowerCase().includes(q) ||
+    (t.artist ?? '').toLowerCase().includes(q) ||
+    (t.album ?? '').toLowerCase().includes(q)
+  )
+}
+
+function onSearch(val) {
+  state.searchQuery = val
+  renderTrackTable()
+  renderLibraryView()
+}
+
+// ── Extra panel (lyrics / similar) ────────────────────────────────────────
+async function togglePanel(panel) {
+  const el = document.getElementById('extra-panel')
+  const btn = document.getElementById('lc-' + panel)
+
+  if (state.activePanel === panel) {
+    state.activePanel = null
+    el.style.display = 'none'
+    document.querySelectorAll('.link-chip').forEach(b => b.classList.remove('active'))
+    return
+  }
+
+  state.activePanel = panel
+  document.querySelectorAll('.link-chip').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+
+  el.style.display = 'block'
+  el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px">Loading…</div>'
+
+  if (!state.currentTrack) {
+    el.innerHTML = '<div class="empty-state">Nothing playing</div>'
+    return
+  }
+
+  if (panel === 'lyrics') {
+    const data = await apiFetch(`/lyrics/${state.currentTrack.id}`)
+    if (!data || !data.lines || data.lines.length === 0) {
+      el.innerHTML = '<div class="empty-state">No lyrics found</div>'
+      return
+    }
+    el.innerHTML = `<div style="max-height:180px;overflow-y:auto;padding:8px 0">
+      ${data.lines.map(l => `<div style="font-size:12px;color:var(--text-mute);text-align:center;padding:2px 0">${esc(l.text)}</div>`).join('')}
+    </div>`
+  } else if (panel === 'similar') {
+    const data = await apiFetch(`/library/tracks/${state.currentTrack.id}/similar`)
+    const list = Array.isArray(data) ? data : []
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state">No similar tracks</div>'
+      return
+    }
+    el.innerHTML = `<div style="max-height:180px;overflow-y:auto">
+      ${list.slice(0, 8).map(t => `
+        <div onclick="onGridClick('${esc(t.id)}')"
+             style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer">
+          <div style="width:28px;height:28px;background:var(--surface);flex-shrink:0;overflow:hidden">
+            ${t.art_hash ? `<img src="${esc(artUrl(t.id))}" style="width:28px;height:28px;object-fit:cover">` : '♫'}
+          </div>
+          <div style="flex:1;overflow:hidden">
+            <div style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</div>
+            <div style="font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.artist ?? '')}</div>
+          </div>
+        </div>`).join('')}
+    </div>`
+  }
+}
+
+// ── Pod members ────────────────────────────────────────────────────────────
+async function loadPodMembers() {
+  const data = await apiFetch('/pod/members')
+  if (!data || !Array.isArray(data) || data.length === 0) return
+
+  const section = document.getElementById('pod-section')
+  section.style.display = 'block'
+  const container = document.getElementById('pod-members')
+  container.innerHTML = data.map(m => `
+    <div class="pod-member">
+      <div class="pod-dot${m.online ? ' online' : ''}"></div>
+      <span class="pod-member-name">${esc(m.name ?? m.id ?? 'Unknown')}</span>
+      <span class="pod-member-track">${esc(m.now_playing?.title ?? '')}</span>
+    </div>
+  `).join('')
+}
+
+// ── Poll loop ──────────────────────────────────────────────────────────────
+async function poll() {
+  // Re-fetch history to show latest
+  const history = await apiFetch('/history?limit=50')
+  if (history) {
+    state.history = Array.isArray(history) ? history : (history.history || [])
+    renderRecentGrid()
+    renderHistoryTable()
+  }
+  await loadPodMembers()
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+initVinyl()
+loadAll()
+setInterval(poll, 10000)
+</script>
 </body>
 </html>
