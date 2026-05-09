@@ -659,6 +659,104 @@
     #queue-list .qi-title { font-size: 12px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #queue-list .qi-artist { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
     #queue-list .queue-item.active .qi-title { color: var(--accent); }
+
+    /* ── Settings ── */
+    .settings-section { max-width: 560px; }
+    .settings-title { font-family: Georgia, serif; font-size: 28px; font-weight: 600; color: var(--text); margin-bottom: 24px; }
+    .settings-group { margin-bottom: 28px; }
+    .settings-group-label {
+      font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    }
+    .folder-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--line); padding: 9px 14px;
+      margin-bottom: 6px; font-size: 12px; color: var(--text-mute); font-family: 'Courier New', monospace;
+    }
+    .folder-row button {
+      background: none; border: 1px solid var(--text-dim); color: var(--text-dim);
+      font-size: 11px; padding: 3px 8px; cursor: pointer; transition: all 0.15s;
+    }
+    .folder-row button:hover { border-color: var(--error, #E84A30); color: var(--error, #E84A30); }
+    .add-folder-row { display: flex; gap: 8px; margin-top: 10px; }
+    .add-folder-row input {
+      flex: 1; background: var(--surface); border: 1px solid var(--line);
+      color: var(--text); font-size: 13px; padding: 8px 12px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .add-folder-row input:focus { border-color: var(--accent); }
+    .btn-primary {
+      background: var(--accent); color: var(--paper); border: none;
+      font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em; padding: 8px 18px; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .status-msg { font-size: 12px; color: var(--text-mute); min-height: 18px; margin-top: 8px; }
+    .node-info {
+      background: var(--surface); border: 1px solid var(--line); padding: 14px;
+      font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-mute);
+      word-break: break-all; line-height: 1.8;
+    }
+    .log-panel {
+      background: var(--black, #0A0908); border: 1px solid var(--line); padding: 10px;
+      font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.7;
+      max-height: 280px; overflow-y: auto; color: var(--text-mute);
+    }
+    .log-line { display: flex; gap: 8px; }
+    .log-ts { color: var(--text-dim); flex-shrink: 0; }
+    .log-level { flex-shrink: 0; width: 38px; }
+    .log-mod { color: var(--accent); flex-shrink: 0; min-width: 70px; }
+    .log-msg { color: var(--text-mute); white-space: pre-wrap; word-break: break-all; }
+
+    /* ── Playlists ── */
+    .pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    .pl-card {
+      background: var(--surface); border: 1px solid var(--line);
+      padding: 20px; cursor: pointer; transition: background 0.15s;
+    }
+    .pl-card:hover { background: var(--surface-hi); }
+    .pl-card-icon { font-size: 28px; margin-bottom: 10px; }
+    .pl-card-name { font-family: Georgia, serif; font-size: 13px; font-weight: 600; color: var(--text); }
+    .pl-card-count { font-size: 11px; color: var(--text-dim); margin-top: 3px; font-family: 'Courier New', monospace; }
+    .pl-back { display: flex; align-items: center; gap: 8px; color: var(--text-mute); cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+    .pl-back:hover { color: var(--accent); }
+    .pl-detail-title { font-family: Georgia, serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .pl-detail-meta { font-size: 12px; color: var(--text-dim); font-family: 'Courier New', monospace; margin-bottom: 20px; }
+    .btn-new-pl {
+      display: flex; align-items: center; gap: 6px; background: none;
+      border: 1px solid var(--line); color: var(--text-mute); font-size: 12px;
+      padding: 7px 14px; cursor: pointer; transition: all 0.15s; margin-bottom: 24px;
+      font-family: 'Courier New', monospace; letter-spacing: 0.1em;
+    }
+    .btn-new-pl:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Context menu ── */
+    .ctx-menu {
+      position: fixed; background: var(--surface); border: 1px solid var(--line);
+      box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 999; min-width: 160px; padding: 4px 0;
+    }
+    .ctx-item { padding: 8px 16px; font-size: 13px; color: var(--text-mute); cursor: pointer; white-space: nowrap; }
+    .ctx-item:hover { background: var(--surface-hi); color: var(--text); }
+
+    /* ── Toasts ── */
+    #toasts { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; max-width: 340px; }
+    .toast {
+      background: var(--surface); border: 1px solid var(--line); padding: 10px 14px;
+      font-size: 12px; color: var(--text-mute); pointer-events: auto;
+      display: flex; align-items: flex-start; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      animation: toast-in .2s ease;
+    }
+    .toast.error { border-color: #E84A30; }
+    .toast.warn  { border-color: #E8A020; }
+    .toast.ok    { border-color: #3FCB6A; }
+    .toast-msg  { flex: 1; word-break: break-word; line-height: 1.4; }
+    @keyframes toast-in { from { opacity: 0; transform: translateX(16px) } to { opacity: 1; transform: none } }
+
+    /* ── WS indicator ── */
+    #ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; transition: background 0.3s; }
+    #ws-dot.ok   { background: #3FCB6A; }
+    #ws-dot.warn { background: #E8A020; animation: ws-pulse .8s ease infinite; }
+    @keyframes ws-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
   </style>
 </head>
 <body>
@@ -670,8 +768,10 @@
   <nav id="nav">
     <button class="nav-btn active" data-view="home" onclick="switchView('home', this)">Home</button>
     <button class="nav-btn" data-view="library" onclick="switchView('library', this)">Library</button>
+    <button class="nav-btn" data-view="playlists" onclick="switchView('playlists', this)">Playlists</button>
     <button class="nav-btn" data-view="queue" onclick="switchView('queue', this)">Queue</button>
     <button class="nav-btn" data-view="history" onclick="switchView('history', this)">History</button>
+    <button class="nav-btn" data-view="settings" onclick="switchView('settings', this)">Settings</button>
   </nav>
 
   <div id="search-wrap">
@@ -679,6 +779,7 @@
     <input id="search" type="text" placeholder="Search…" oninput="onSearch(this.value)">
   </div>
 
+  <div id="ws-dot" title="Connecting…"></div>
   <div id="status-dot" title="Disconnected"></div>
 </div>
 
@@ -786,6 +887,55 @@
       </table>
     </div>
 
+    <!-- Playlists view -->
+    <div id="view-playlists" class="view">
+      <button class="btn-new-pl" onclick="createPlaylist()">＋ New Playlist</button>
+      <div id="pl-content"><div class="empty-state">Loading playlists…</div></div>
+    </div>
+
+    <!-- Settings view -->
+    <div id="view-settings" class="view">
+      <div class="settings-section">
+        <div class="settings-title">Settings</div>
+
+        <div class="settings-group">
+          <div class="settings-group-label">Music Folders</div>
+          <div id="folder-list"></div>
+          <div class="add-folder-row">
+            <input id="folder-input" type="text" placeholder="C:\Users\You\Music" onkeydown="if(event.key==='Enter')addFolder()">
+            <button class="btn-primary" onclick="addFolder()">SCAN</button>
+          </div>
+          <div class="status-msg" id="scan-msg"></div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-label">Node Identity</div>
+          <div class="node-info" id="node-info">Loading…</div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-label">Stats</div>
+          <div class="node-info" id="stats-info">Loading…</div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-label" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Daemon Log</span>
+            <button onclick="loadDaemonLog()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">REFRESH</button>
+          </div>
+          <div class="log-panel" id="log-panel"><span style="color:var(--text-dim)">Loading…</span></div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-label">Keyboard Shortcuts</div>
+          <div class="node-info" style="font-family:inherit;font-size:12px;line-height:2">
+            <b>Space</b> — Play / Pause &nbsp;&nbsp; <b>← →</b> — Prev / Next<br>
+            <b>↑ ↓</b> — Volume &nbsp;&nbsp; <b>S</b> — Shuffle All
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /left -->
 
   <!-- RIGHT: Now Playing panel -->
@@ -859,6 +1009,7 @@
 
 <!-- Hidden audio element -->
 <audio id="audio" preload="none"></audio>
+<div id="toasts"></div>
 
 <script>
 'use strict'
@@ -880,6 +1031,8 @@ const state = {
   libFilter: 'all',
   searchQuery: '',
 }
+
+let _logInterval = null
 
 const audio = document.getElementById('audio')
 
@@ -964,6 +1117,8 @@ function updateStatusDot(connected, playing) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function switchView(name, btn) {
+  clearInterval(_logInterval); _logInterval = null
+
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
   const el = document.getElementById('view-' + name)
   if (el) el.classList.add('active')
@@ -975,7 +1130,9 @@ function switchView(name, btn) {
     if (nb) nb.classList.add('active')
   }
 
-  if (name === 'queue') renderQueueView()
+  if (name === 'queue')     renderQueueView()
+  if (name === 'settings')  renderSettings()
+  if (name === 'playlists') renderPlaylists()
 }
 
 // ── Vinyl disc canvas ──────────────────────────────────────────────────────
@@ -1569,9 +1726,269 @@ async function poll() {
   await loadPodMembers()
 }
 
+// ── Toasts ─────────────────────────────────────────────────────────────────
+function showToast(type, msg, duration = 5000) {
+  const icons = { error: '✕', warn: '⚠', ok: '✓' }
+  const el = document.createElement('div')
+  el.className = `toast ${type}`
+  el.innerHTML = `<span>${icons[type] || '·'}</span><span class="toast-msg">${esc(msg)}</span>`
+  document.getElementById('toasts').appendChild(el)
+  setTimeout(() => el.remove(), duration)
+}
+
+// ── WebSocket ───────────────────────────────────────────────────────────────
+let _wsOk = false
+function setWsDot(state) {
+  const dot = document.getElementById('ws-dot')
+  if (!dot) return
+  dot.className = state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : ''
+  dot.title = state === 'ok' ? 'Connected' : state === 'warn' ? 'Reconnecting…' : 'Disconnected'
+}
+
+function connectWs() {
+  setWsDot('warn')
+  const ws = new WebSocket(`ws://${location.host}`)
+  ws.onopen = () => {
+    setWsDot('ok')
+    if (!_wsOk) showToast('ok', 'Connected to daemon')
+    _wsOk = true
+  }
+  ws.onmessage = e => {
+    try {
+      const m = JSON.parse(e.data)
+      if (m.type === 'library_updated') {
+        loadAll()
+        if (document.getElementById('view-settings').classList.contains('active')) renderSettings()
+      }
+    } catch {}
+  }
+  ws.onerror = () => setWsDot('warn')
+  ws.onclose = () => {
+    setWsDot('warn')
+    if (_wsOk) showToast('warn', 'Lost connection — reconnecting…')
+    _wsOk = false
+    setTimeout(connectWs, 4000)
+  }
+}
+
+// ── Settings ────────────────────────────────────────────────────────────────
+async function renderSettings() {
+  // Folders
+  const folders = await apiFetch('/library/folders').catch(() => []) || []
+  const fl = document.getElementById('folder-list')
+  if (fl) {
+    fl.innerHTML = folders.length
+      ? folders.map(f => `<div class="folder-row">
+          <span>${esc(f)}</span>
+          <button data-folder="${esc(f)}" onclick="removeFolder(this.dataset.folder)">Remove</button>
+        </div>`).join('')
+      : '<div style="color:var(--text-dim);font-size:12px;padding:8px 0">No folders indexed yet</div>'
+  }
+
+  // Node identity
+  const node = await apiFetch('/identity') || {}
+  const ni = document.getElementById('node-info')
+  if (ni) ni.innerHTML = `<b>ID:</b> ${esc(node.node_id || '—')}<br><b>Name:</b> ${esc(node.display_name || '—')}`
+
+  // Stats
+  const stats = await apiFetch('/stats') || {}
+  const si = document.getElementById('stats-info')
+  if (si) si.innerHTML = `${stats.trackCount ?? 0} tracks · ${stats.artistCount ?? 0} artists · ${stats.albumCount ?? 0} albums<br>${stats.playCount ?? 0} plays total`
+
+  // Log
+  loadDaemonLog()
+  clearInterval(_logInterval)
+  _logInterval = setInterval(loadDaemonLog, 5000)
+}
+
+async function loadDaemonLog() {
+  const panel = document.getElementById('log-panel')
+  if (!panel) { clearInterval(_logInterval); return }
+  try {
+    const data = await apiFetch('/logs?n=100')
+    if (!data) return
+    const levelColor = { DEBUG: 'var(--text-dim)', INFO: 'var(--text-mute)', WARN: '#E8A020', ERROR: '#E84A30' }
+    const atBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 40
+    panel.innerHTML = (data.entries || []).map(e => {
+      const t = new Date(e.ts).toTimeString().slice(0, 8)
+      const col = levelColor[e.level] || 'var(--text-mute)'
+      return `<div class="log-line">
+        <span class="log-ts">${t}</span>
+        <span class="log-level" style="color:${col};width:38px;flex-shrink:0">${e.level}</span>
+        <span class="log-mod">[${esc(e.mod || '')}]</span>
+        <span class="log-msg">${esc(e.msg)}${e.err ? ` — ${esc(e.err)}` : ''}</span>
+      </div>`
+    }).join('') || '<span style="color:var(--text-dim)">No log entries</span>'
+    if (atBottom) panel.scrollTop = panel.scrollHeight
+  } catch {}
+}
+
+async function addFolder() {
+  const input = document.getElementById('folder-input')
+  const msg   = document.getElementById('scan-msg')
+  const p = input.value.trim()
+  if (!p) return
+  msg.textContent = 'Scanning…'
+  msg.style.color = 'var(--text-mute)'
+  try {
+    const r = await fetch('/library/folders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_path: p })
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json()
+    const text = `Indexed ${data.indexed ?? 0} of ${data.files_found ?? 0} files`
+    msg.textContent = text
+    msg.style.color = (data.indexed > 0) ? '#3FCB6A' : '#E8A020'
+    showToast('ok', text)
+    input.value = ''
+    loadAll()
+    renderSettings()
+  } catch (e) {
+    msg.textContent = e.message || 'Scan failed'
+    msg.style.color = '#E84A30'
+    showToast('error', `Scan failed: ${e.message}`)
+  }
+}
+
+async function removeFolder(path) {
+  if (!confirm(`Remove "${path}" from library?`)) return
+  try {
+    await fetch('/library/folders', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_path: path })
+    })
+    showToast('ok', `Removed: ${path}`)
+    loadAll()
+    renderSettings()
+  } catch (e) {
+    showToast('error', `Failed to remove: ${e.message}`)
+  }
+}
+
+// ── Playlists ───────────────────────────────────────────────────────────────
+async function renderPlaylists() {
+  const playlists = await apiFetch('/playlists') || []
+  const el = document.getElementById('pl-content')
+  if (!el) return
+  if (!playlists.length) {
+    el.innerHTML = '<div class="empty-state">No playlists yet — create one above</div>'
+    return
+  }
+  el.innerHTML = `<div class="pl-grid">${playlists.map(p => `
+    <div class="pl-card" onclick="openPlaylist('${esc(p.id)}')">
+      <div class="pl-card-icon">♪</div>
+      <div class="pl-card-name">${esc(p.name)}</div>
+      <div class="pl-card-count">${p.track_count ?? 0} track${(p.track_count ?? 0) !== 1 ? 's' : ''}</div>
+    </div>`).join('')}</div>`
+}
+
+async function openPlaylist(id) {
+  const pl = await apiFetch(`/playlists/${id}`)
+  if (!pl) return
+  const el = document.getElementById('pl-content')
+  el.innerHTML = `
+    <div class="pl-back" onclick="renderPlaylists()">← Back</div>
+    <div class="pl-detail-title">${esc(pl.name)}</div>
+    <div class="pl-detail-meta">${pl.tracks.length} track${pl.tracks.length !== 1 ? 's' : ''}</div>
+    <table class="track-table"><thead><tr>
+      <th style="width:28px">#</th><th style="width:45%">TITLE</th>
+      <th style="width:25%">ARTIST</th><th style="width:48px">TIME</th>
+    </tr></thead><tbody>
+    ${pl.tracks.map((t, i) => `<tr onclick="playPlaylistFrom(${JSON.stringify(pl.tracks)},${i})" data-id="${esc(t.id)}">
+      <td class="track-mono">${i + 1}</td>
+      <td class="track-title">${esc(t.title ?? 'Unknown')}</td>
+      <td>${esc(t.artist ?? '')}</td>
+      <td class="track-mono">${fmtDur(t.duration ? t.duration / 1000 : 0)}</td>
+    </tr>`).join('')}
+    </tbody></table>`
+}
+
+function playPlaylistFrom(tracks, idx) {
+  if (!tracks.length) return
+  state.queue = tracks
+  playTrack(tracks[idx], idx)
+}
+
+async function createPlaylist() {
+  const name = prompt('Playlist name:')
+  if (!name?.trim()) return
+  try {
+    await fetch('/playlists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    })
+    renderPlaylists()
+  } catch (e) {
+    showToast('error', `Failed: ${e.message}`)
+  }
+}
+
+// ── Context menu ────────────────────────────────────────────────────────────
+function closeCtx() { document.getElementById('ctx-menu')?.remove() }
+
+function showCtxMenu(e, trackId) {
+  e.preventDefault()
+  closeCtx()
+  const track = state.tracks.find(t => t.id === trackId)
+  if (!track) return
+  const menu = document.createElement('div')
+  menu.className = 'ctx-menu'
+  menu.id = 'ctx-menu'
+  menu.style.left = `${e.clientX}px`
+  menu.style.top  = `${e.clientY}px`
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="closeCtx();onGridClick('${esc(trackId)}')">▶ Play now</div>
+    <div class="ctx-item" onclick="closeCtx();addToQueue('${esc(trackId)}')">+ Add to queue</div>`
+  document.body.appendChild(menu)
+  const r = menu.getBoundingClientRect()
+  if (r.right  > window.innerWidth)  menu.style.left = `${e.clientX - r.width}px`
+  if (r.bottom > window.innerHeight) menu.style.top  = `${e.clientY - r.height}px`
+}
+
+function addToQueue(trackId) {
+  const track = state.tracks.find(t => t.id === trackId)
+  if (!track) return
+  state.queue.push(track)
+  if (state.queueIndex < 0) playTrack(state.queue[0], 0)
+  showToast('ok', `Added: ${track.title}`)
+}
+
+document.addEventListener('click', closeCtx)
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+  if (e.key === ' ')            { e.preventDefault(); togglePlay() }
+  else if (e.key === 'ArrowRight') playNext()
+  else if (e.key === 'ArrowLeft')  playPrev()
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); audio.volume = Math.min(1, audio.volume + 0.05); document.getElementById('vol').value = Math.round(audio.volume * 100) }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); audio.volume = Math.max(0, audio.volume - 0.05); document.getElementById('vol').value = Math.round(audio.volume * 100) }
+  else if (e.key === 's' || e.key === 'S') toggleShuffle()
+  else if (e.key === 'Escape')    closeCtx()
+})
+
+// ── Error handler ───────────────────────────────────────────────────────────
+window.onerror = (msg, src, line) => { showToast('error', `JS error: ${msg} (${src?.split('/').pop()}:${line})`); return false }
+window.addEventListener('unhandledrejection', e => { showToast('error', `Unhandled: ${e.reason?.message || e.reason}`) })
+
+// ── Context menu wiring for track table (right-click) ───────────────────────
+const _origRenderTrackTable = renderTrackTable
+window.renderTrackTable = function(tracks) {
+  _origRenderTrackTable(tracks)
+  document.querySelectorAll('#track-tbody tr[data-id]').forEach(tr => {
+    tr.addEventListener('contextmenu', e => showCtxMenu(e, tr.dataset.id))
+  })
+}
+renderTrackTable = window.renderTrackTable
+
 // ── Init ───────────────────────────────────────────────────────────────────
 initVinyl()
 loadAll()
+connectWs()
 setInterval(poll, 10000)
 </script>
 </body>
