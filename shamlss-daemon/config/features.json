@@ -16,7 +16,7 @@
   "p9_crossfade": true,
   "p9_auto_mix": true,
   "p9_visualizer": true,
-  "p10_wireguard": false,
+  "p10_wireguard": true,
   "p10_multi_room": true,
   "p10_offline": true,
   "p10_updater": false

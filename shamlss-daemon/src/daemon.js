@@ -18,6 +18,7 @@ const reactionsRoutes = require('./modules/reactions/routes')
 const chatRoutes = require('./modules/chat/routes')
 const multiRoomRoutes = require('./modules/multi-room/routes')
 const offlineCacheRoutes = require('./modules/offline-cache/routes')
+const tailscale = require('./modules/tailscale')
 const discovery = require('./modules/discovery')
 const events = require('./modules/events')
 
@@ -99,6 +100,7 @@ async function start(httpPort = 7432) {
   app.use('/chat', chatRoutes)
   app.use('/multiroom', multiRoomRoutes)
   app.use('/offline', offlineCacheRoutes)
+  app.use('/tailscale', tailscale.router)
 
   app.get('/history', (req, res) => {
     const dbCore = require('./core/db')
