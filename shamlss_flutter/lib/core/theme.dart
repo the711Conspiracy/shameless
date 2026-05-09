@@ -7,8 +7,8 @@ import 'package:palette_generator/palette_generator.dart';
 class SleeveTokens {
   SleeveTokens._();
 
-  static const ink   = Color(0xFF1A1612);
-  static const paper = Color(0xFFF4F1EA);
+  static const ink   = Color(0xFF13102B);
+  static const paper = Color(0xFFF0EEF8);
   static const rust  = Color(0xFFC96442);
   static const online = Color(0xFF3FCB6A);
   static const warn  = Color(0xFFE8A020);
@@ -43,13 +43,13 @@ class SleeveTints {
 
   /// Fallback when no album art is available.
   static const brand = SleeveTints(
-    base:       Color(0xFF1A1612),
-    surface:    Color(0xFF221E19),
-    surfaceHi:  Color(0xFF2E2820),
-    line:       Color(0x2EF4F1EA), // paper @ 18%
-    text:       Color(0xFFF4F1EA),
-    textMute:   Color(0x99F4F1EA), // 60%
-    textDim:    Color(0x52F4F1EA), // 32%
+    base:       Color(0xFF13102B),
+    surface:    Color(0xFF1C1838),
+    surfaceHi:  Color(0xFF251F42),
+    line:       Color(0x29F0EEF8), // paper @ 16%
+    text:       Color(0xFFF0EEF8),
+    textMute:   Color(0x99F0EEF8), // 60%
+    textDim:    Color(0x52F0EEF8), // 32%
     accent:     Color(0xFFC96442),
     accentSoft: Color(0x47C96442), // 28%
   );
@@ -153,7 +153,7 @@ class ShamlssTheme {
       colorScheme: const ColorScheme.dark(
         primary:    SleeveTokens.rust,
         secondary:  SleeveTokens.warn,
-        surface:    Color(0xFF221E19),
+        surface:    Color(0xFF1C1838),
         onPrimary:  SleeveTokens.paper,
         onSurface:  SleeveTokens.paper,
       ),
@@ -194,7 +194,7 @@ class ShamlssTheme {
         height: 64,
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF221E19),
+        color: const Color(0xFF1C1838),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(0),
@@ -209,7 +209,7 @@ class ShamlssTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF221E19),
+        fillColor: const Color(0xFF1C1838),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
           borderSide: BorderSide(color: SleeveTokens.paper.withOpacity(0.18)),
@@ -250,8 +250,8 @@ class ShamlssColors extends ThemeExtension<ShamlssColors> {
 
   // Keep names that existing screens use, mapped to new tokens.
   static const black     = SleeveTokens.black;
-  static const navy      = Color(0xFF1A1612);         // ink
-  static const surface   = Color(0xFF221E19);
+  static const navy      = Color(0xFF13102B);         // ink
+  static const surface   = Color(0xFF1C1838);
   static const card      = Color(0xFF2A2420);
   static const amber     = SleeveTokens.rust;         // primary accent
   static const amberDim  = Color(0xFF8A4430);         // rust dimmed

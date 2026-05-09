@@ -7,8 +7,8 @@
   <style>
     /* ── Design tokens ── */
     :root {
-      --ink:        #1A1612;
-      --paper:      #F4F1EA;
+      --ink:        #13102B;
+      --paper:      #F0EEF8;
       --rust:       #C96442;
       --online:     #3FCB6A;
       --warn:       #E8A020;
@@ -16,13 +16,13 @@
       --black:      #0A0908;
 
       /* adaptive tints (updated by JS) */
-      --base:       #1A1612;
-      --surface:    #221E19;
-      --surface-hi: #2E2820;
-      --line:       rgba(244,241,234,0.18);
-      --text:       #F4F1EA;
-      --text-mute:  rgba(244,241,234,0.60);
-      --text-dim:   rgba(244,241,234,0.32);
+      --base:       #13102B;
+      --surface:    #1C1838;
+      --surface-hi: #251F42;
+      --line:       rgba(240,238,248,0.16);
+      --text:       #F0EEF8;
+      --text-mute:  rgba(240,238,248,0.60);
+      --text-dim:   rgba(240,238,248,0.32);
       --accent:     #C96442;
       --accent-soft:rgba(201,100,66,0.28);
     }
@@ -847,22 +847,19 @@
       </div>
 
       <!-- Filter chips -->
-      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap" id="lib-filters">
-        <button class="link-chip active" onclick="setLibFilter('all',this)">ALL</button>
+      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;align-items:center" id="lib-filters">
+        <button class="link-chip active" onclick="setLibFilter('tracks',this)">TRACKS</button>
         <button class="link-chip" onclick="setLibFilter('artist',this)">ARTISTS</button>
         <button class="link-chip" onclick="setLibFilter('album',this)">ALBUMS</button>
         <button class="link-chip" onclick="setLibFilter('podcast',this)">PODCASTS</button>
+        <span id="lib-browse-crumb" style="display:none;font-family:'Courier New',monospace;font-size:10px;color:var(--text-mute);margin-left:8px">
+          ← <span id="lib-browse-label"></span>
+          <button onclick="clearLibBrowse()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:11px;margin-left:6px">✕</button>
+        </span>
       </div>
 
-      <!-- Album 2-col grid -->
-      <div id="lib-album-grid" style="
-        display:grid;
-        grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-        gap:16px;
-      "></div>
-
-      <!-- Track list fallback -->
-      <div id="lib-track-list" style="display:none"></div>
+      <!-- Library content area -->
+      <div id="lib-content"></div>
     </div><!-- /view-library -->
 
     <!-- Queue view -->
@@ -1090,7 +1087,8 @@ async function loadAll() {
     state.stats = stats
     updateStatusDot(true, false)
     document.getElementById('status-dot').title = `${stats.trackCount ?? 0} tracks`
-    document.getElementById('lib-subtitle').textContent =
+    const sub = document.getElementById('lib-subtitle')
+    if (sub) sub.textContent =
       `${stats.trackCount ?? state.tracks.length} tracks · ${stats.artistCount ?? 0} artists · ${stats.albumCount ?? 0} albums`
   } else {
     updateStatusDot(false, false)
@@ -1099,6 +1097,11 @@ async function loadAll() {
   // Start queue from full library
   if (state.queue.length === 0 && state.tracks.length > 0) {
     state.queue = [...state.tracks]
+  }
+
+  // Re-render library if it's the active view
+  if (document.getElementById('view-library')?.classList.contains('active')) {
+    renderLibraryView()
   }
 }
 
@@ -1133,6 +1136,7 @@ function switchView(name, btn) {
   if (name === 'queue')     renderQueueView()
   if (name === 'settings')  renderSettings()
   if (name === 'playlists') renderPlaylists()
+  if (name === 'library')   renderLibraryView()
 }
 
 // ── Vinyl disc canvas ──────────────────────────────────────────────────────
@@ -1492,9 +1496,14 @@ function onHistoryClick(id) {
 }
 
 // ── Render: library view ───────────────────────────────────────────────────
+// browseKey: null | { type: 'artist'|'album', value: string }
+state.browseKey = null
+
 function renderLibraryView() {
   const filter = state.libFilter
   const q = state.searchQuery.toLowerCase()
+  const el = document.getElementById('lib-content')
+  if (!el) return
 
   let tracks = state.tracks
   if (q) {
@@ -1504,72 +1513,88 @@ function renderLibraryView() {
       (t.album ?? '').toLowerCase().includes(q)
     )
   }
-  if (filter === 'podcast') {
-    tracks = tracks.filter(t => t.type === 'podcast' || t.type === 'audiobook')
+
+  // Browse sub-filter (clicking artist/album → show their tracks)
+  const crumb = document.getElementById('lib-browse-crumb')
+  const crumbLabel = document.getElementById('lib-browse-label')
+  if (state.browseKey) {
+    const { type, value } = state.browseKey
+    tracks = tracks.filter(t =>
+      type === 'artist'
+        ? (t.artist ?? '') === value
+        : (t.album  ?? '') === value
+    )
+    crumb.style.display = ''
+    crumbLabel.textContent = value
+  } else {
+    crumb.style.display = 'none'
   }
 
-  const grid = document.getElementById('lib-album-grid')
-  const trackList = document.getElementById('lib-track-list')
+  if (filter === 'tracks') {
+    el.innerHTML = libTracksTable(tracks)
+    wireLibTableCtx()
 
-  if (filter === 'all' || filter === 'album') {
-    // Group by album
-    const byAlbum = {}
-    for (const t of tracks) {
-      const a = t.album ?? 'Unknown Album'
-      if (!byAlbum[a]) byAlbum[a] = []
-      byAlbum[a].push(t)
-    }
-    const albums = Object.keys(byAlbum).sort()
-
-    grid.style.display = 'grid'
-    trackList.style.display = 'none'
-    grid.innerHTML = albums.map(album => {
-      const albumTracks = byAlbum[album]
-      const first = albumTracks.find(t => t.art_hash) ?? albumTracks[0]
-      return `<div class="grid-card" style="cursor:pointer" onclick="playAlbum('${esc(album)}')">
-        <div class="grid-card-art">
-          ${first.art_hash
-            ? `<img src="${esc(artUrl(first.id))}" alt="" loading="lazy"
-                 onerror="this.parentElement.innerHTML='<div class=\\"art-placeholder\\">♫</div>'">`
-            : '<div class="art-placeholder">♫</div>'}
-        </div>
-        <div class="grid-card-title" style="font-family:Georgia,serif">${esc(album)}</div>
-        <div class="grid-card-artist">${esc(albumTracks[0]?.artist ?? '')}</div>
+  } else if (filter === 'album') {
+    if (state.browseKey?.type === 'album') {
+      el.innerHTML = libTracksTable(tracks)
+      wireLibTableCtx()
+    } else {
+      const byAlbum = {}
+      for (const t of tracks) {
+        const a = t.album ?? 'Unknown Album'
+        if (!byAlbum[a]) byAlbum[a] = []
+        byAlbum[a].push(t)
+      }
+      const albums = Object.keys(byAlbum).sort()
+      el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px">
+        ${albums.map(album => {
+          const atr = byAlbum[album]
+          const first = atr.find(t => t.art_hash) ?? atr[0]
+          return `<div class="grid-card" onclick="browseLib('album','${esc(album)}')">
+            <div class="grid-card-art">
+              ${first.art_hash
+                ? `<img src="${esc(artUrl(first.id))}" alt="" loading="lazy"
+                     onerror="this.parentElement.innerHTML='<div class=\\"art-placeholder\\">♫</div>'">`
+                : '<div class="art-placeholder">♫</div>'}
+            </div>
+            <div class="grid-card-title" style="font-family:Georgia,serif">${esc(album)}</div>
+            <div class="grid-card-artist">${esc(atr[0]?.artist ?? '')}</div>
+          </div>`
+        }).join('') || '<div class="empty-state">No albums found</div>'}
       </div>`
-    }).join('') || '<div class="empty-state" style="grid-column:1/-1">No albums found</div>'
+    }
 
   } else if (filter === 'artist') {
-    // Group by artist
-    const byArtist = {}
-    for (const t of tracks) {
-      const a = t.artist ?? 'Unknown Artist'
-      if (!byArtist[a]) byArtist[a] = []
-      byArtist[a].push(t)
-    }
-    const artists = Object.keys(byArtist).sort()
-
-    grid.style.display = 'none'
-    trackList.style.display = 'block'
-    trackList.innerHTML = `
-      <table class="track-table"><thead><tr>
-        <th style="width:40%">ARTIST</th>
-        <th style="width:60px">TRACKS</th>
+    if (state.browseKey?.type === 'artist') {
+      el.innerHTML = libTracksTable(tracks)
+      wireLibTableCtx()
+    } else {
+      const byArtist = {}
+      for (const t of tracks) {
+        const a = t.artist ?? 'Unknown Artist'
+        if (!byArtist[a]) byArtist[a] = []
+        byArtist[a].push(t)
+      }
+      const artists = Object.keys(byArtist).sort()
+      el.innerHTML = `<table class="track-table"><thead><tr>
+        <th>ARTIST</th><th style="width:70px">TRACKS</th><th style="width:48px"></th>
       </tr></thead><tbody>
-      ${artists.map(artist => `
-        <tr onclick="playArtist('${esc(artist)}')" style="cursor:pointer">
-          <td class="track-title">${esc(artist)}</td>
-          <td class="track-mono">${byArtist[artist].length}</td>
-        </tr>
-      `).join('')}
+      ${artists.map(artist => `<tr>
+        <td class="track-title" style="cursor:pointer" onclick="browseLib('artist','${esc(artist)}')">${esc(artist)}</td>
+        <td class="track-mono">${byArtist[artist].length}</td>
+        <td style="text-align:right">
+          <button onclick="event.stopPropagation();playArtist('${esc(artist)}')"
+                  style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px" title="Play all">▶</button>
+        </td>
+      </tr>`).join('')}
       </tbody></table>`
+    }
 
   } else if (filter === 'podcast') {
-    grid.style.display = 'none'
-    trackList.style.display = 'block'
-    if (tracks.length === 0) {
-      trackList.innerHTML = '<div class="empty-state">No podcasts or audiobooks found</div>'
-    } else {
-      trackList.innerHTML = tracks.map(t => `
+    const pods = tracks.filter(t => t.type === 'podcast' || t.type === 'audiobook')
+    el.innerHTML = pods.length === 0
+      ? '<div class="empty-state">No podcasts or audiobooks found</div>'
+      : pods.map(t => `
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"
              onclick="onGridClick('${esc(t.id)}')">
           <div style="width:40px;height:40px;background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">
@@ -1579,14 +1604,56 @@ function renderLibraryView() {
             <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title ?? 'Unknown')}</div>
             <div style="font-size:11px;color:var(--text-mute);font-family:'Courier New',monospace;letter-spacing:0.1em">${esc(t.type?.toUpperCase() ?? '')}</div>
           </div>
-        </div>
-      `).join('')
-    }
+        </div>`).join('')
   }
+}
+
+function libTracksTable(tracks) {
+  if (!tracks.length) return '<div class="empty-state">No tracks found</div>'
+  return `<table class="track-table"><thead><tr>
+    <th style="width:28px">#</th>
+    <th style="width:42%">TITLE</th>
+    <th style="width:22%">ARTIST</th>
+    <th style="width:18%">ALBUM</th>
+    <th style="width:48px">TIME</th>
+  </tr></thead><tbody>
+  ${tracks.map((t, i) => `<tr data-id="${esc(t.id)}" onclick="onLibTrackClick('${esc(t.id)}',${i},${JSON.stringify(tracks.map(x=>x.id))})">
+    <td class="track-mono">${i + 1}</td>
+    <td class="track-title" style="max-width:0">${esc(t.title ?? 'Unknown')}</td>
+    <td style="max-width:0">${esc(t.artist ?? '')}</td>
+    <td style="max-width:0">${esc(t.album ?? '')}</td>
+    <td class="track-mono">${fmtDur(t.duration ? t.duration / 1000 : 0)}</td>
+  </tr>`).join('')}
+  </tbody></table>`
+}
+
+function wireLibTableCtx() {
+  document.querySelectorAll('#lib-content tr[data-id]').forEach(tr => {
+    tr.addEventListener('contextmenu', e => showCtxMenu(e, tr.dataset.id))
+  })
+}
+
+function onLibTrackClick(id, idx, allIds) {
+  const all = allIds.map(sid => state.tracks.find(t => t.id === sid)).filter(Boolean)
+  const track = all[idx] || state.tracks.find(t => t.id === id)
+  if (!track) return
+  state.queue = all.length ? all : [...state.tracks]
+  playTrack(track, idx)
+}
+
+function browseLib(type, value) {
+  state.browseKey = { type, value }
+  renderLibraryView()
+}
+
+function clearLibBrowse() {
+  state.browseKey = null
+  renderLibraryView()
 }
 
 function setLibFilter(f, btn) {
   state.libFilter = f
+  state.browseKey = null
   document.querySelectorAll('#lib-filters .link-chip').forEach(b => b.classList.remove('active'))
   btn.classList.add('active')
   renderLibraryView()
@@ -1594,14 +1661,14 @@ function setLibFilter(f, btn) {
 
 function playAlbum(album) {
   const tracks = state.tracks.filter(t => (t.album ?? 'Unknown Album') === album)
-  if (tracks.length === 0) return
+  if (!tracks.length) return
   state.queue = tracks
   playTrack(tracks[0], 0)
 }
 
 function playArtist(artist) {
   const tracks = state.tracks.filter(t => (t.artist ?? 'Unknown Artist') === artist)
-  if (tracks.length === 0) return
+  if (!tracks.length) return
   state.queue = tracks
   playTrack(tracks[0], 0)
 }
@@ -1637,8 +1704,11 @@ function filterTracks(tracks) {
 
 function onSearch(val) {
   state.searchQuery = val
+  state.browseKey = null
   renderTrackTable()
-  renderLibraryView()
+  if (document.getElementById('view-library')?.classList.contains('active')) {
+    renderLibraryView()
+  }
 }
 
 // ── Extra panel (lyrics / similar) ────────────────────────────────────────

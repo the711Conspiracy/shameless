@@ -128,15 +128,45 @@ class _AppShellState extends State<AppShell> {
           if (!_daemon.connected) return ConnectScreen(daemon: _daemon);
           return Scaffold(
             backgroundColor: _tints.base,
-            body: IndexedStack(
-              index: _index,
+            body: Stack(
               children: [
-                LibraryScreen(daemon: _daemon, player: _player),
-                PlaylistsScreen(daemon: _daemon, player: _player),
-                NowPlayingScreen(player: _player, daemon: _daemon),
-                PodsScreen(daemon: _daemon, player: _player),
-                HistoryScreen(daemon: _daemon, player: _player),
-                SettingsScreen(daemon: _daemon, sleepTimer: _sleepTimer, player: _player),
+                IndexedStack(
+                  index: _index,
+                  children: [
+                    LibraryScreen(daemon: _daemon, player: _player),
+                    PlaylistsScreen(daemon: _daemon, player: _player),
+                    NowPlayingScreen(player: _player, daemon: _daemon),
+                    PodsScreen(daemon: _daemon, player: _player),
+                    HistoryScreen(daemon: _daemon, player: _player),
+                  ],
+                ),
+                // Persistent settings gear — top-right, above status bar
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 14,
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(
+                          daemon: _daemon,
+                          sleepTimer: _sleepTimer,
+                          player: _player,
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: _tints.surface.withOpacity(0.88),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _tints.line, width: 1),
+                      ),
+                      child: Icon(Icons.settings_outlined, size: 16, color: _tints.textDim),
+                    ),
+                  ),
+                ),
               ],
             ),
             bottomNavigationBar: _SleeveBottomNav(
@@ -173,14 +203,13 @@ class _SleeveBottomNav extends StatelessWidget {
     required this.onMiniPlayerTap,
   });
 
-  static const _labels = ['HOME', 'LIBRARY', 'LISTS', 'PODS', 'HISTORY', 'SETTINGS'];
+  static const _labels = ['LIBRARY', 'LISTS', 'NOW\nPLAYING', 'PODS', 'HISTORY'];
   static const _icons  = [
-    Icons.home_outlined,
     Icons.library_music_outlined,
     Icons.queue_music_outlined,
-    Icons.group_outlined,
+    Icons.album_outlined,
+    Icons.headphones_outlined,
     Icons.history_outlined,
-    Icons.tune_outlined,
   ];
 
   @override
@@ -210,37 +239,61 @@ class _SleeveBottomNav extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(_labels.length, (i) {
                   final selected = i == index;
+                  final isNowPlaying = i == 2;
                   return Expanded(
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () => onIndexChanged(i),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Dot indicator
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: selected ? tints.accent : Colors.transparent,
-                              border: selected
-                                  ? null
-                                  : Border.all(color: tints.textDim, width: 1),
+                      child: isNowPlaying
+                          // Centre NOW PLAYING — raised disc button
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: selected ? tints.accent : tints.surface,
+                                    border: Border.all(
+                                      color: selected ? tints.accent : tints.line,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.album_outlined,
+                                    size: 20,
+                                    color: selected ? tints.text : tints.textMute,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: selected ? tints.accent : Colors.transparent,
+                                    border: selected
+                                        ? null
+                                        : Border.all(color: tints.textDim, width: 1),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _labels[i],
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 0.18,
+                                    color: selected ? tints.accent : tints.textDim,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _labels[i],
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 0.18,
-                              color: selected ? tints.accent : tints.textDim,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   );
                 }),
